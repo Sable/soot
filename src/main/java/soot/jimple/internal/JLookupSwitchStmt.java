@@ -10,12 +10,12 @@ package soot.jimple.internal;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.stream.Collectors;
 
 import soot.Unit;
 import soot.UnitBox;
@@ -75,6 +76,21 @@ public class JLookupSwitchStmt extends AbstractSwitchStmt implements LookupSwitc
     return new JLookupSwitchStmt(getKey(), clonedLookupValues, getTargets(), getDefaultTarget());
   }
 
+  private String toSimpleString() {
+    final char endOfLine = ' ';
+    List<String> cases = lookupValues.stream()
+            .map((lookupValue) -> String.valueOf(lookupValue.value))
+            .distinct()
+            .collect(Collectors.toList());
+    if (getDefaultTarget() != null) {
+      cases.add("default");
+    }
+    return Jimple.LOOKUPSWITCH + "(" + keyBox.getValue().toString() + ')' + endOfLine
+              + "{" + endOfLine
+              + "cases:" + String.join(",", cases) + endOfLine
+              + "}";
+  }
+
   @Override
   public String toString() {
     final char endOfLine = ' ';
@@ -87,12 +103,20 @@ public class JLookupSwitchStmt extends AbstractSwitchStmt implements LookupSwitc
       IntConstant c = it.next();
       buf.append("    " + Jimple.CASE + " ").append(c).append(": " + Jimple.GOTO + " ");
       Unit target = getTarget(it.previousIndex());
-      buf.append(target == this ? "self" : target).append(';').append(endOfLine);
+      if (target instanceof JLookupSwitchStmt) {
+        buf.append(target == this ? "self" : ((JLookupSwitchStmt) target).toSimpleString()).append(';').append(endOfLine);
+      } else {
+        buf.append(target).append(';').append(endOfLine);
+      }
     }
     {
       buf.append("    " + Jimple.DEFAULT + ": " + Jimple.GOTO + " ");
       Unit target = getDefaultTarget();
-      buf.append(target == this ? "self" : target).append(';').append(endOfLine);
+      if (target instanceof JLookupSwitchStmt) {
+        buf.append(target == this ? "self" : ((JLookupSwitchStmt) target).toSimpleString()).append(';').append(endOfLine);
+      } else {
+        buf.append(target).append(';').append(endOfLine);
+      }
     }
     buf.append('}');
 
