@@ -698,6 +698,26 @@
                 as Soot's preference for the type of source files to read when
                 it looks for a class.
             </long_desc>
+	    <value>
+                <name>Cache</name>
+                <alias>cache</alias>
+                <short_desc>Favour shared class cache as Soot source</short_desc>
+                <long_desc>
+                  Try to resolve classes first from the shared class cache found in
+                  the Soot classpath. Fall back to <tt>.class</tt> and then <tt>.jimple</tt> files
+                  only when unable to find a class in the cache.
+                </long_desc>
+            </value>
+	    <value>
+                <name>Only Cache Source</name>
+                <alias>only-cache</alias>
+                <short_desc>Use only shared class cache as Soot source</short_desc>
+                <long_desc>
+		  Try to resolve classes first from the shared class cache found in
+		  the Soot classpath. Do not try any other types of files even when
+		  unable to find a class in the cache.                                                           
+                </long_desc>
+            </value>
             <value>
                 <name>Class File</name>
                 <alias>c</alias>

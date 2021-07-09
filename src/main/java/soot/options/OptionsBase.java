@@ -111,6 +111,11 @@ abstract class OptionsBase {
     return classes;
   }
 
+  public void addArgClass(String classname) {
+    classes.add(classname);
+    System.out.println("The classes in optionBase are: " + classes.toString());
+  }
+
   public boolean setPhaseOption(String phase, String option) {
     return PhaseOptions.v().processPhaseOptions(phase, option);
   }

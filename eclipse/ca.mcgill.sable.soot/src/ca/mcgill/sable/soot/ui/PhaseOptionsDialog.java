@@ -8959,6 +8959,14 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 
 		data = new OptionData [] {
 		
+				new OptionData("Cache",
+						"cache",
+						"\nTry to resolve classes first from the shared class cache found \nin the Soot classpath. Fall back to .class and then .jimple \nfiles only when unable to find a class in the cache.",
+						false),
+				new OptionData("Only Cache Source",
+						"only-cache",
+						"\nTry to resolve classes first from the shared class cache found \nin the Soot classpath. Do not try any other types of files even \nwhen unable to find a class in the cache.",
+						false),
 				new OptionData("Class File",
 						"c class",
 						"\nTry to resolve classes first from .class files found in the Soot \nclasspath. Fall back to .jimple files only when unable to find a \n.class file.",

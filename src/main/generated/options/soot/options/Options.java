@@ -42,15 +42,17 @@ public class Options extends OptionsBase {
         return G.v().soot_options_Options();
     }
 
-    public static final int src_prec_c = 1;
-    public static final int src_prec_class = 1;
-    public static final int src_prec_only_class = 2;
-    public static final int src_prec_J = 3;
-    public static final int src_prec_jimple = 3;
-    public static final int src_prec_java = 4;
-    public static final int src_prec_apk = 5;
-    public static final int src_prec_apk_class_jimple = 6;
-    public static final int src_prec_apk_c_j = 6;
+    public static final int src_prec_cache = 1;
+    public static final int src_prec_only_cache = 2;
+    public static final int src_prec_c = 3;
+    public static final int src_prec_class = 3;
+    public static final int src_prec_only_class = 4;
+    public static final int src_prec_J = 5;
+    public static final int src_prec_jimple = 5;
+    public static final int src_prec_java = 6;
+    public static final int src_prec_apk = 7;
+    public static final int src_prec_apk_class_jimple = 8;
+    public static final int src_prec_apk_c_j = 8;
     public static final int output_format_J = 1;
     public static final int output_format_jimple = 1;
     public static final int output_format_j = 2;
@@ -381,6 +383,24 @@ public class Options extends OptionsBase {
                 String value = nextOption();
         
                 if (false);
+                else if (false
+                        || value.equals("cache")
+                ) {
+                    if (src_prec != 0 && src_prec != src_prec_cache) {
+                        G.v().out.println("Multiple values given for option " + option);
+                        return false;
+                    }
+                    src_prec = src_prec_cache;
+                }
+                else if (false
+                        || value.equals("only-cache")
+                ) {
+                    if (src_prec != 0 && src_prec != src_prec_only_cache) {
+                        G.v().out.println("Multiple values given for option " + option);
+                        return false;
+                    }
+                    src_prec = src_prec_only_cache;
+                }
                 else if (false
                         || value.equals("c")
                         || value.equals("class")
@@ -1791,6 +1811,8 @@ public class Options extends OptionsBase {
                 + padOpt("-force-android-jar ARG", "Force Soot to use ARG as the path for the android.jar file.")
                 + padOpt("-ast-metrics", "Compute AST Metrics if performing java to jimple")
                 + padOpt("-src-prec ARG", "Sets source precedence to ARG files")
+                    + padVal("cache", "Favour shared class cache as Soot source")
+                    + padVal("only-cache", "Use only shared class cache as Soot source")
                     + padVal("c class (default)", "Favour class files as Soot source")
                     + padVal("only-class", "Use only class files as Soot source")
                     + padVal("J jimple", "Favour Jimple files as Soot source")

@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import soot.JavaClassProvider.JarException;
 import soot.asm.AsmClassProvider;
 import soot.asm.AsmJava9ClassProvider;
+import soot.cache.CacheClassProvider;
 import soot.dexpler.DexFileProvider;
 import soot.options.Options;
 
@@ -245,6 +246,17 @@ public class SourceLocator {
       classProviders.add(new AsmJava9ClassProvider());
     }
     switch (Options.v().src_prec()) {
+      case Options.src_prec_cache:
+        System.out.println("Using the cache with default source provider chain.");
+        classProviders.add(new CacheClassProvider());
+        classProviders.add(classFileClassProvider);
+        classProviders.add(new JimpleClassProvider());
+        classProviders.add(new JavaClassProvider());
+        break;
+      case Options.src_prec_only_cache:
+        System.out.println("Using the cache only source provider chain.");
+        classProviders.add(new CacheClassProvider());
+        break;
       case Options.src_prec_class:
         classProviders.add(classFileClassProvider);
         classProviders.add(new JimpleClassProvider());

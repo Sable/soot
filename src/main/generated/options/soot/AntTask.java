@@ -269,6 +269,8 @@ public class AntTask extends MatchingTask {
         public void setsrc_prec(String arg) {
             if(false
     
+                || arg.equals( "cache" )
+                || arg.equals( "only-cache" )
                 || arg.equals( "c" )
                 || arg.equals( "class" )
                 || arg.equals( "only-class" )

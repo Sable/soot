@@ -79,7 +79,7 @@ public class SootClassBuilder extends ClassVisitor {
    * @param klass
    *          Soot class to build.
    */
-  protected SootClassBuilder(SootClass klass) {
+  public SootClassBuilder(SootClass klass) {
     super(Opcodes.ASM8);
     this.klass = klass;
     this.deps = new HashSet<>();
@@ -95,6 +95,10 @@ public class SootClassBuilder extends ClassVisitor {
 
   protected SootClass getKlass() {
     return klass;
+  }
+
+  public Set<soot.Type> getDeps() {
+    return deps;
   }
 
   void addDep(String s) {
