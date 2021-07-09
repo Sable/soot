@@ -52,6 +52,8 @@ import soot.jimple.NullConstant;
 import soot.jimple.Stmt;
 import soot.options.CPOptions;
 import soot.options.Options;
+import soot.shimple.PhiExpr;
+import soot.shimple.ShimpleBody;
 import soot.tagkit.Host;
 import soot.tagkit.LineNumberTag;
 import soot.tagkit.SourceLnPosTag;
@@ -109,16 +111,28 @@ public class CopyPropagator extends BodyTransformer {
       Timers.v().propagatorTimer.start();
     }
 
+    final boolean isShimple = b instanceof ShimpleBody;
+
     // Count number of definitions for each local.
     Map<Local, Integer> localToDefCount = new HashMap<Local, Integer>();
     for (Unit u : b.getUnits()) {
       if (u instanceof DefinitionStmt) {
-        Value leftOp = ((DefinitionStmt) u).getLeftOp();
+        DefinitionStmt ds = (DefinitionStmt) u;
+        Value leftOp = ds.getLeftOp();
         if (leftOp instanceof Local) {
           Local loc = (Local) leftOp;
-
           Integer old = localToDefCount.get(loc);
-          localToDefCount.put(loc, (old == null) ? 1 : (old + 1));
+          int newCount = (old == null) ? 1 : (old + 1);
+          if (isShimple) {
+            // Need to count all definitions in a PhiExpr
+            Value rightOp = ds.getRightOp();
+            if (rightOp instanceof PhiExpr) {
+              PhiExpr pe = (PhiExpr) rightOp;
+              // NOTE: "-1" accounts for the "+1" already added in 'newCount'
+              newCount += pe.getArgCount() - 1;
+            }
+          }
+          localToDefCount.put(loc, newCount);
         }
       }
     }
@@ -141,10 +155,10 @@ public class CopyPropagator extends BodyTransformer {
       CPOptions options = new CPOptions(opts);
       // Perform a local propagation pass.
       for (Unit u : (new PseudoTopologicalOrderer<Unit>()).newList(graph, false)) {
-        for (ValueBox useBox : u.getUseBoxes()) {
+        USE_LOOP: for (ValueBox useBox : u.getUseBoxes()) {
           Value value = useBox.getValue();
           if (value instanceof Local) {
-            Local l = (Local) value;
+            final Local l = (Local) value;
 
             // We force propagating nulls. If a target can only be
             // null due to typing, we always inline that constant.
@@ -160,10 +174,36 @@ public class CopyPropagator extends BodyTransformer {
             // We can propagate the definition if we either only have one definition
             // or all definitions are side-effect free and equal. For starters, we
             // only support constants in the case of multiple definitions.
-            List<Unit> defsOfUse = localDefs.getDefsOfAt(l, u);
-            boolean propagateDef = defsOfUse.size() == 1;
-            if (!propagateDef && defsOfUse.size() > 0) {
-              boolean agrees = true;
+            boolean propagateDef;
+            final List<Unit> defsOfUse = localDefs.getDefsOfAt(l, u);
+            if (defsOfUse.isEmpty()) {
+              propagateDef = false;
+            } else if (defsOfUse.size() == 1) {
+              propagateDef = true;
+              if (isShimple) {
+                // If a single definition was found but the RHS is a PhiExpr
+                // that contains more than one distinct value, then it counts
+                // as multiple definitions so it must not be propagated.
+                Value rhs = ((DefinitionStmt) defsOfUse.get(0)).getRightOp();
+                if (rhs instanceof PhiExpr) {
+                  PhiExpr pe = (PhiExpr) rhs;
+                  List<Value> vals = pe.getValues();
+                  if (!vals.isEmpty()) {
+                    Iterator<Value> itr = vals.iterator();
+                    final Value firstVal = itr.next();
+                    while (itr.hasNext()) {
+                      Value next = itr.next();
+                      if (!firstVal.equivTo(next)) {
+                        propagateDef = false;
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+            } else {
+              assert (defsOfUse.size() > 1);
+              propagateDef = true; // Can propagate if no disagreement is found
               Constant constVal = null;
               for (Unit defUnit : defsOfUse) {
                 boolean defAgrees = false;
@@ -178,15 +218,16 @@ public class CopyPropagator extends BodyTransformer {
                     }
                   }
                 }
-                agrees &= defAgrees;
+                // Do not propagate if any disagreement is found
+                if (!defAgrees) {
+                  propagateDef = false;
+                  break;
+                }
               }
-              propagateDef = agrees;
             }
-
             if (propagateDef) {
               final DefinitionStmt def = (DefinitionStmt) defsOfUse.get(0);
               final Value rightOp = def.getRightOp();
-
               if (rightOp instanceof Constant) {
                 if (useBox.canContainValue(rightOp)) {
                   useBox.setValue(rightOp);
@@ -214,52 +255,37 @@ public class CopyPropagator extends BodyTransformer {
                     useBox.setValue(m);
                     copyLineTags(useBox, def);
                     fastCopyPropagationCount++;
-                    continue;
-                  }
+                  } else {
+                    List<Unit> path = graph.getExtendedBasicBlockPathBetween(def, u);
+                    if (path != null) {
+                      Iterator<Unit> pathIt = path.iterator();
+                      // Skip first node
+                      pathIt.next();
+                      // Make sure that m is not redefined along path
+                      while (pathIt.hasNext()) {
+                        Stmt s = (Stmt) pathIt.next();
 
-                  List<Unit> path = graph.getExtendedBasicBlockPathBetween(def, u);
-                  if (path == null) {
-                    // no path in the extended basic block
-                    continue;
-                  }
-
-                  {
-                    boolean isRedefined = false;
-
-                    Iterator<Unit> pathIt = path.iterator();
-                    // Skip first node
-                    pathIt.next();
-                    // Make sure that m is not redefined along path
-                    while (pathIt.hasNext()) {
-                      Stmt s = (Stmt) pathIt.next();
-
-                      if (u == s) {
-                        // Don't look at the last statement
-                        // since it is evaluated after the uses.
-                        break;
-                      }
-                      if (s instanceof DefinitionStmt) {
-                        if (((DefinitionStmt) s).getLeftOp() == m) {
-                          isRedefined = true;
+                        if (u == s) {
+                          // Don't look at the last statement
+                          // since it is evaluated after the uses.
                           break;
                         }
+                        if (s instanceof DefinitionStmt) {
+                          if (((DefinitionStmt) s).getLeftOp() == m) {
+                            continue USE_LOOP;
+                          }
+                        }
                       }
-                    }
-
-                    if (isRedefined) {
-                      continue;
+                      useBox.setValue(m);
+                      slowCopyPropagationCount++;
                     }
                   }
-
-                  useBox.setValue(m);
-                  slowCopyPropagationCount++;
                 }
               }
             }
           }
         }
       }
-
       if (Options.v().verbose()) {
         logger.debug("[" + b.getMethod().getName() + "]     Propagated: " + fastCopyPropagationCount + " fast copies  "
             + slowCopyPropagationCount + " slow copies");
