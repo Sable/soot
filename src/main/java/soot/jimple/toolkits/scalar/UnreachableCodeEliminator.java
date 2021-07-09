@@ -41,6 +41,7 @@ import soot.Scene;
 import soot.Singletons;
 import soot.Trap;
 import soot.Unit;
+import soot.UnitBox;
 import soot.options.Options;
 import soot.toolkits.exceptions.PedanticThrowAnalysis;
 import soot.toolkits.exceptions.ThrowAnalysis;
@@ -64,6 +65,7 @@ public class UnreachableCodeEliminator extends BodyTransformer {
     this.throwAnalysis = ta;
   }
 
+  @Override
   protected void internalTransform(Body body, String phaseName, Map<String, String> options) {
     final boolean verbose = Options.v().verbose();
     if (verbose) {
@@ -99,9 +101,16 @@ public class UnreachableCodeEliminator extends BodyTransformer {
     // occur in practice, and certainly no in code generated from Java source.
     final Chain<Trap> traps = body.getTraps();
     for (Iterator<Trap> it = traps.iterator(); it.hasNext();) {
-      Trap trap = it.next();
-      if ((trap.getBeginUnit() == trap.getEndUnit()) || !reachable.contains(trap.getHandlerUnit())) {
+      final Trap trap = it.next();
+      UnitBox beginBox = trap.getBeginUnitBox();
+      UnitBox endBox = trap.getEndUnitBox();
+      UnitBox handlerBox = trap.getHandlerUnitBox();
+      if ((beginBox.getUnit() == endBox.getUnit()) || !reachable.contains(handlerBox.getUnit())) {
         it.remove();
+        // Cleanup UnitBox references that are no longer used
+        beginBox.getUnit().removeBoxPointingToThis(beginBox);
+        endBox.getUnit().removeBoxPointingToThis(endBox);
+        handlerBox.getUnit().removeBoxPointingToThis(handlerBox);
       }
     }
 
