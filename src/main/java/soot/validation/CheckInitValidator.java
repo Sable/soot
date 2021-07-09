@@ -31,6 +31,7 @@ import soot.Value;
 import soot.ValueBox;
 import soot.toolkits.exceptions.ThrowAnalysisFactory;
 import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.FullExceptionalUnitGraph;
 import soot.toolkits.scalar.FlowSet;
 import soot.toolkits.scalar.InitAnalysis;
 
@@ -43,7 +44,7 @@ public enum CheckInitValidator implements BodyValidator {
 
   @Override
   public void validate(Body body, List<ValidationException> exception) {
-    ExceptionalUnitGraph g = new ExceptionalUnitGraph(body, ThrowAnalysisFactory.checkInitThrowAnalysis(), false);
+    ExceptionalUnitGraph g = new FullExceptionalUnitGraph(body, ThrowAnalysisFactory.checkInitThrowAnalysis());
 
     InitAnalysis analysis = new InitAnalysis(g);
     for (Unit s : body.getUnits()) {
@@ -53,9 +54,8 @@ public enum CheckInitValidator implements BodyValidator {
         if (v instanceof Local) {
           Local l = (Local) v;
           if (!init.contains(l)) {
-            exception.add(
-                new ValidationException(s, "Local variable " + l.getName() + " is not definitively defined at this point",
-                    "Warning: Local variable " + l + " not definitely defined at " + s + " in " + body.getMethod()));
+            String pfx = "Local variable " + l.getName() + " is not definitively defined at ";
+            exception.add(new ValidationException(s, pfx + "this point", "Warning: " + pfx + s + " in " + body.getMethod()));
           }
         }
       }

@@ -22,8 +22,9 @@ package soot.validation;
  * #L%
  */
 
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import soot.Body;
 import soot.G;
@@ -31,9 +32,7 @@ import soot.Local;
 import soot.Unit;
 import soot.Value;
 import soot.ValueBox;
-import soot.toolkits.exceptions.PedanticThrowAnalysis;
-import soot.toolkits.exceptions.ThrowAnalysis;
-import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.FullExceptionalUnitGraph;
 import soot.toolkits.graph.UnitGraph;
 import soot.toolkits.scalar.LocalDefs;
 
@@ -74,11 +73,10 @@ public enum UsesValidator implements BodyValidator {
     // Note that unreachable traps can be removed by setting jb.uce's
     // "remove-unreachable-traps" option to true.
 
-    ThrowAnalysis throwAnalysis = PedanticThrowAnalysis.v();
-    UnitGraph g = new ExceptionalUnitGraph(body, throwAnalysis, false);
-    LocalDefs ld = G.v().soot_toolkits_scalar_LocalDefsFactory().newLocalDefs(g, true);
+    final UnitGraph g = new FullExceptionalUnitGraph(body);
+    final LocalDefs ld = G.v().soot_toolkits_scalar_LocalDefsFactory().newLocalDefs(g, true);
+    final Set<Local> locals = new HashSet<>(body.getLocals());
 
-    Collection<Local> locals = body.getLocals();
     for (Unit u : body.getUnits()) {
       for (ValueBox box : u.getUseBoxes()) {
         Value v = box.getValue();

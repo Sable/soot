@@ -38,9 +38,8 @@ import soot.Local;
 import soot.Unit;
 import soot.Value;
 import soot.ValueBox;
-import soot.options.Options;
-import soot.toolkits.exceptions.PedanticThrowAnalysis;
 import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.FullExceptionalUnitGraph;
 import soot.util.ArraySet;
 
 /**
@@ -58,17 +57,16 @@ public class FastColorer {
   public static <G> void unsplitAssignColorsToLocals(Body unitBody, Map<Local, G> localToGroup,
       Map<Local, Integer> localToColor, Map<G, Integer> groupToColorCount) {
 
-    // To understand why a pedantic throw analysis is required, see comment
-    // in assignColorsToLocals method
-    final ExceptionalUnitGraph unitGraph =
-        new ExceptionalUnitGraph(unitBody, PedanticThrowAnalysis.v(), Options.v().omit_excepting_unit_edges());
+    // Build a FullExceptionalUnitGraph to prevent JVM bytecode verifier errors
+    // like "java.lang.VerifyError: Incompatible argument to function".
+    final ExceptionalUnitGraph unitGraph = new FullExceptionalUnitGraph(unitBody);
     final UnitInterferenceGraph intGraph =
         new UnitInterferenceGraph(unitBody, localToGroup, new SimpleLiveLocals(unitGraph), unitGraph);
 
-    Map<Local, String> localToOriginalName = new HashMap<Local, String>();
+    Map<Local, String> localToOriginalName = new HashMap<>();
 
     // Map each local variable to its original name
-    for (Local local : intGraph.getLocals()) {
+    for (Local local : unitBody.getLocals()) {
       String name = local.getName();
       int signIndex = name.indexOf('#');
       if (signIndex >= 0) {
@@ -78,12 +76,12 @@ public class FastColorer {
     }
 
     // maps an original name to the colors being used for it
-    Map<StringGroupPair, List<Integer>> originalNameAndGroupToColors = new HashMap<StringGroupPair, List<Integer>>();
+    Map<StringGroupPair, List<Integer>> originalNameAndGroupToColors = new HashMap<>();
 
     // Assign a color for each local.
     {
       int[] freeColors = new int[10];
-      for (Local local : intGraph.getLocals()) {
+      for (Local local : unitBody.getLocals()) {
         if (localToColor.containsKey(local)) {
           // Already assigned, probably a parameter
           continue;
@@ -117,7 +115,7 @@ public class FastColorer {
           StringGroupPair key = new StringGroupPair(localToOriginalName.get(local), group);
           List<Integer> originalNameColors = originalNameAndGroupToColors.get(key);
           if (originalNameColors == null) {
-            originalNameColors = new ArrayList<Integer>();
+            originalNameColors = new ArrayList<>();
             originalNameAndGroupToColors.put(key, originalNameColors);
           }
 
@@ -150,17 +148,16 @@ public class FastColorer {
   public static <G> void assignColorsToLocals(Body unitBody, Map<Local, G> localToGroup, Map<Local, Integer> localToColor,
       Map<G, Integer> groupToColorCount) {
 
-    // Build a CFG using a pedantic throw analysis to prevent JVM
-    // "java.lang.VerifyError: Incompatible argument to function" errors.
-    final ExceptionalUnitGraph unitGraph =
-        new ExceptionalUnitGraph(unitBody, PedanticThrowAnalysis.v(), Options.v().omit_excepting_unit_edges());
+    // Build a FullExceptionalUnitGraph to prevent JVM bytecode verifier errors
+    // like "java.lang.VerifyError: Incompatible argument to function".
+    final ExceptionalUnitGraph unitGraph = new FullExceptionalUnitGraph(unitBody);
     final UnitInterferenceGraph intGraph =
         new UnitInterferenceGraph(unitBody, localToGroup, new SimpleLiveLocals(unitGraph), unitGraph);
 
     // Sort the locals first to maximize the locals per color. We first
     // assign those locals that have many conflicts and then assign the
     // easier ones to those color groups.
-    List<Local> sortedLocals = new ArrayList<Local>(intGraph.getLocals());
+    List<Local> sortedLocals = new ArrayList<>(unitBody.getLocals());
     Collections.sort(sortedLocals, new Comparator<Local>() {
       @Override
       public int compare(Local o1, Local o2) {
@@ -211,18 +208,18 @@ public class FastColorer {
     }
   }
 
-  /** Implementation of a unit interference graph. */
+  /**
+   * Implementation of a unit interference graph.
+   */
   private static class UnitInterferenceGraph {
 
     // Maps a local to its interfering locals.
     final Map<Local, Set<Local>> localToLocals;
-    final List<Local> locals;
 
     public UnitInterferenceGraph(Body body, Map<Local, ? extends Object> localToGroup, LiveLocals liveLocals,
         ExceptionalUnitGraph unitGraph) {
 
-      this.locals = new ArrayList<Local>(body.getLocals());
-      this.localToLocals = new HashMap<Local, Set<Local>>(body.getLocalCount() * 2 + 1, 0.7f);
+      this.localToLocals = new HashMap<>(body.getLocalCount() * 2 + 1, 0.7f);
 
       // Go through code, noting interferences
       for (Unit unit : body.getUnits()) {
@@ -262,7 +259,7 @@ public class FastColorer {
           if (defValue instanceof Local) {
             Local defLocal = (Local) defValue;
 
-            Set<Local> liveLocalsAtUnit = new HashSet<Local>();
+            Set<Local> liveLocalsAtUnit = new HashSet<>();
             for (Unit succ : unitGraph.getSuccsOf(unit)) {
               liveLocalsAtUnit.addAll(liveLocals.getLiveLocalsBefore(succ));
             }
@@ -277,16 +274,12 @@ public class FastColorer {
       }
     }
 
-    public List<Local> getLocals() {
-      return locals;
-    }
-
-    public void setInterference(Local l1, Local l2) {
+    private void setInterference(Local l1, Local l2) {
       // We need the mapping in both directions
       // l1 -> l2
       Set<Local> locals = localToLocals.get(l1);
       if (locals == null) {
-        locals = new ArraySet<Local>();
+        locals = new ArraySet<>();
         localToLocals.put(l1, locals);
       }
       locals.add(l2);
@@ -294,7 +287,7 @@ public class FastColorer {
       // l2 -> l1
       locals = localToLocals.get(l2);
       if (locals == null) {
-        locals = new ArraySet<Local>();
+        locals = new ArraySet<>();
         localToLocals.put(l2, locals);
       }
       locals.add(l1);
@@ -315,7 +308,9 @@ public class FastColorer {
     }
   }
 
-  /** Binds together a String and a Group. */
+  /**
+   * Binds together a String and a Group.
+   */
   private static class StringGroupPair {
     private final String string;
     private final Object group;

@@ -322,7 +322,7 @@ public class ExceptionalUnitGraph extends UnitGraph implements ExceptionalGraph<
    * @return a <code>Map</code> which whose contents are equivalent to the input <code>map</code>, plus the information that
    *         <code>u</code> throws <code>caught</code> to <code>t</code>.
    */
-  private Map<Unit, Collection<ExceptionDest>> addDestToMap(Map<Unit, Collection<ExceptionDest>> map, Unit u, Trap t,
+  protected Map<Unit, Collection<ExceptionDest>> addDestToMap(Map<Unit, Collection<ExceptionDest>> map, Unit u, Trap t,
       ThrowableSet caught) {
     Collection<ExceptionDest> dests = (map == null ? null : map.get(u));
     if (dests == null) {

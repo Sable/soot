@@ -35,6 +35,7 @@ import soot.toolkits.graph.DominatorTree;
 import soot.toolkits.graph.DominatorsFinder;
 import soot.toolkits.graph.ExceptionalBlockGraph;
 import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.FullExceptionalUnitGraph;
 import soot.toolkits.graph.HashReversibleGraph;
 import soot.toolkits.graph.ReversibleGraph;
 import soot.toolkits.graph.SimpleDominatorsFinder;
@@ -144,7 +145,7 @@ public class DefaultShimpleFactory implements ShimpleFactory {
     if (ug == null) {
       Body body = getBody();
       UnreachableCodeEliminator.v().transform(body);
-      ug = new ExceptionalUnitGraph(body);
+      ug = new FullExceptionalUnitGraph(body);
       this.ug = ug;
     }
     return ug;

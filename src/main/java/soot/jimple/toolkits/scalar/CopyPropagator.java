@@ -57,7 +57,7 @@ import soot.tagkit.LineNumberTag;
 import soot.tagkit.SourceLnPosTag;
 import soot.tagkit.Tag;
 import soot.toolkits.exceptions.ThrowAnalysis;
-import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.FullExceptionalUnitGraph;
 import soot.toolkits.graph.PseudoTopologicalOrderer;
 import soot.toolkits.graph.UnitGraph;
 import soot.toolkits.scalar.LocalDefs;
@@ -65,19 +65,20 @@ import soot.toolkits.scalar.LocalDefs;
 public class CopyPropagator extends BodyTransformer {
   private static final Logger logger = LoggerFactory.getLogger(CopyPropagator.class);
 
-  protected ThrowAnalysis throwAnalysis = null;
-  protected boolean forceOmitExceptingUnitEdges = false;
+  protected final ThrowAnalysis throwAnalysis;
+  protected final boolean forceOmitExceptingUnitEdges;
 
   public CopyPropagator(Singletons.Global g) {
+    this(null, false);
   }
 
   public CopyPropagator(ThrowAnalysis ta) {
-    this.throwAnalysis = ta;
+    this(ta, false);
   }
 
   public CopyPropagator(ThrowAnalysis ta, boolean forceOmitExceptingUnitEdges) {
     this.throwAnalysis = ta;
-    this.forceOmitExceptingUnitEdges = forceOmitExceptingUnitEdges;
+    this.forceOmitExceptingUnitEdges = forceOmitExceptingUnitEdges ? true : Options.v().omit_excepting_unit_edges();
   }
 
   public static CopyPropagator v() {
@@ -104,7 +105,6 @@ public class CopyPropagator extends BodyTransformer {
     if (Options.v().verbose()) {
       logger.debug("[" + b.getMethod().getName() + "] Propagating copies...");
     }
-
     if (Options.v().time()) {
       Timers.v().propagatorTimer.start();
     }
@@ -123,149 +123,144 @@ public class CopyPropagator extends BodyTransformer {
       }
     }
 
-    if (throwAnalysis == null) {
-      throwAnalysis = Scene.v().getDefaultThrowAnalysis();
+    // Go through the definitions, building the webs
+    int fastCopyPropagationCount = 0;
+    int slowCopyPropagationCount = 0;
+
+    ThrowAnalysis ta = this.throwAnalysis;
+    if (ta == null) {
+      // NOTE: the CopyPropagator constructor should not call "Scene.v()"
+      // thus, this condition check must remain here.
+      ta = Scene.v().getDefaultThrowAnalysis();
     }
+    UnitGraph graph = new FullExceptionalUnitGraph(b, ta, forceOmitExceptingUnitEdges);
+    LocalDefs localDefs = G.v().soot_toolkits_scalar_LocalDefsFactory().newLocalDefs(graph);
+    CPOptions options = new CPOptions(opts);
+    // Perform a local propagation pass.
+    for (Unit u : (new PseudoTopologicalOrderer<Unit>()).newList(graph, false)) {
+      for (ValueBox useBox : u.getUseBoxes()) {
+        Value value = useBox.getValue();
+        if (value instanceof Local) {
+          Local l = (Local) value;
 
-    if (!forceOmitExceptingUnitEdges) {
-      forceOmitExceptingUnitEdges = Options.v().omit_excepting_unit_edges();
-    }
-
-    {
-      // Go through the definitions, building the webs
-      int fastCopyPropagationCount = 0;
-      int slowCopyPropagationCount = 0;
-
-      UnitGraph graph = new ExceptionalUnitGraph(b, throwAnalysis, forceOmitExceptingUnitEdges);
-      LocalDefs localDefs = G.v().soot_toolkits_scalar_LocalDefsFactory().newLocalDefs(graph);
-      CPOptions options = new CPOptions(opts);
-      // Perform a local propagation pass.
-      for (Unit u : (new PseudoTopologicalOrderer<Unit>()).newList(graph, false)) {
-        for (ValueBox useBox : u.getUseBoxes()) {
-          Value value = useBox.getValue();
-          if (value instanceof Local) {
-            Local l = (Local) value;
-
-            // We force propagating nulls. If a target can only be
-            // null due to typing, we always inline that constant.
-            if (!(l.getType() instanceof NullType)) {
-              if (options.only_regular_locals() && l.getName().startsWith("$")) {
-                continue;
-              }
-              if (options.only_stack_locals() && !l.getName().startsWith("$")) {
-                continue;
-              }
+          // We force propagating nulls. If a target can only be
+          // null due to typing, we always inline that constant.
+          if (!(l.getType() instanceof NullType)) {
+            if (options.only_regular_locals() && l.getName().startsWith("$")) {
+              continue;
             }
+            if (options.only_stack_locals() && !l.getName().startsWith("$")) {
+              continue;
+            }
+          }
 
-            // We can propagate the definition if we either only have one definition
-            // or all definitions are side-effect free and equal. For starters, we
-            // only support constants in the case of multiple definitions.
-            List<Unit> defsOfUse = localDefs.getDefsOfAt(l, u);
-            boolean propagateDef = defsOfUse.size() == 1;
-            if (!propagateDef && defsOfUse.size() > 0) {
-              boolean agrees = true;
-              Constant constVal = null;
-              for (Unit defUnit : defsOfUse) {
-                boolean defAgrees = false;
-                if (defUnit instanceof AssignStmt) {
-                  Value rightOp = ((AssignStmt) defUnit).getRightOp();
-                  if (rightOp instanceof Constant) {
-                    if (constVal == null) {
-                      constVal = (Constant) rightOp;
-                      defAgrees = true;
-                    } else if (constVal.equals(rightOp)) {
-                      defAgrees = true;
-                    }
+          // We can propagate the definition if we either only have one definition
+          // or all definitions are side-effect free and equal. For starters, we
+          // only support constants in the case of multiple definitions.
+          List<Unit> defsOfUse = localDefs.getDefsOfAt(l, u);
+          boolean propagateDef = defsOfUse.size() == 1;
+          if (!propagateDef && defsOfUse.size() > 0) {
+            boolean agrees = true;
+            Constant constVal = null;
+            for (Unit defUnit : defsOfUse) {
+              boolean defAgrees = false;
+              if (defUnit instanceof AssignStmt) {
+                Value rightOp = ((AssignStmt) defUnit).getRightOp();
+                if (rightOp instanceof Constant) {
+                  if (constVal == null) {
+                    constVal = (Constant) rightOp;
+                    defAgrees = true;
+                  } else if (constVal.equals(rightOp)) {
+                    defAgrees = true;
                   }
                 }
-                agrees &= defAgrees;
               }
-              propagateDef = agrees;
+              agrees &= defAgrees;
             }
+            propagateDef = agrees;
+          }
 
-            if (propagateDef) {
-              final DefinitionStmt def = (DefinitionStmt) defsOfUse.get(0);
-              final Value rightOp = def.getRightOp();
+          if (propagateDef) {
+            final DefinitionStmt def = (DefinitionStmt) defsOfUse.get(0);
+            final Value rightOp = def.getRightOp();
 
-              if (rightOp instanceof Constant) {
-                if (useBox.canContainValue(rightOp)) {
-                  useBox.setValue(rightOp);
-                  copyLineTags(useBox, def);
-                }
-              } else if (rightOp instanceof CastExpr) {
-                CastExpr ce = (CastExpr) rightOp;
-                if (ce.getCastType() instanceof RefLikeType) {
-                  Value op = ce.getOp();
-                  if ((op instanceof IntConstant && ((IntConstant) op).value == 0)
-                      || (op instanceof LongConstant && ((LongConstant) op).value == 0)) {
-                    if (useBox.canContainValue(NullConstant.v())) {
-                      useBox.setValue(NullConstant.v());
-                      copyLineTags(useBox, def);
-                    }
-                  }
-                }
-              } else if (rightOp instanceof Local) {
-                Local m = (Local) rightOp;
-                if (l != m) {
-                  Integer defCount = localToDefCount.get(m);
-                  if (defCount == null || defCount == 0) {
-                    throw new RuntimeException("Variable " + m + " used without definition!");
-                  } else if (defCount == 1) {
-                    useBox.setValue(m);
+            if (rightOp instanceof Constant) {
+              if (useBox.canContainValue(rightOp)) {
+                useBox.setValue(rightOp);
+                copyLineTags(useBox, def);
+              }
+            } else if (rightOp instanceof CastExpr) {
+              CastExpr ce = (CastExpr) rightOp;
+              if (ce.getCastType() instanceof RefLikeType) {
+                Value op = ce.getOp();
+                if ((op instanceof IntConstant && ((IntConstant) op).value == 0)
+                    || (op instanceof LongConstant && ((LongConstant) op).value == 0)) {
+                  if (useBox.canContainValue(NullConstant.v())) {
+                    useBox.setValue(NullConstant.v());
                     copyLineTags(useBox, def);
-                    fastCopyPropagationCount++;
-                    continue;
                   }
+                }
+              }
+            } else if (rightOp instanceof Local) {
+              Local m = (Local) rightOp;
+              if (l != m) {
+                Integer defCount = localToDefCount.get(m);
+                if (defCount == null || defCount == 0) {
+                  throw new RuntimeException("Variable " + m + " used without definition!");
+                } else if (defCount == 1) {
+                  useBox.setValue(m);
+                  copyLineTags(useBox, def);
+                  fastCopyPropagationCount++;
+                  continue;
+                }
 
-                  List<Unit> path = graph.getExtendedBasicBlockPathBetween(def, u);
-                  if (path == null) {
-                    // no path in the extended basic block
-                    continue;
-                  }
+                List<Unit> path = graph.getExtendedBasicBlockPathBetween(def, u);
+                if (path == null) {
+                  // no path in the extended basic block
+                  continue;
+                }
 
-                  {
-                    boolean isRedefined = false;
+                {
+                  boolean isRedefined = false;
 
-                    Iterator<Unit> pathIt = path.iterator();
-                    // Skip first node
-                    pathIt.next();
-                    // Make sure that m is not redefined along path
-                    while (pathIt.hasNext()) {
-                      Stmt s = (Stmt) pathIt.next();
+                  Iterator<Unit> pathIt = path.iterator();
+                  // Skip first node
+                  pathIt.next();
+                  // Make sure that m is not redefined along path
+                  while (pathIt.hasNext()) {
+                    Stmt s = (Stmt) pathIt.next();
 
-                      if (u == s) {
-                        // Don't look at the last statement
-                        // since it is evaluated after the uses.
+                    if (u == s) {
+                      // Don't look at the last statement
+                      // since it is evaluated after the uses.
+                      break;
+                    }
+                    if (s instanceof DefinitionStmt) {
+                      if (((DefinitionStmt) s).getLeftOp() == m) {
+                        isRedefined = true;
                         break;
                       }
-                      if (s instanceof DefinitionStmt) {
-                        if (((DefinitionStmt) s).getLeftOp() == m) {
-                          isRedefined = true;
-                          break;
-                        }
-                      }
-                    }
-
-                    if (isRedefined) {
-                      continue;
                     }
                   }
 
-                  useBox.setValue(m);
-                  slowCopyPropagationCount++;
+                  if (isRedefined) {
+                    continue;
+                  }
                 }
+
+                useBox.setValue(m);
+                slowCopyPropagationCount++;
               }
             }
           }
         }
       }
-
-      if (Options.v().verbose()) {
-        logger.debug("[" + b.getMethod().getName() + "]     Propagated: " + fastCopyPropagationCount + " fast copies  "
-            + slowCopyPropagationCount + " slow copies");
-      }
     }
 
+    if (Options.v().verbose()) {
+      logger.debug("[" + b.getMethod().getName() + "]     Propagated: " + fastCopyPropagationCount + " fast copies  "
+          + slowCopyPropagationCount + " slow copies");
+    }
     if (Options.v().time()) {
       Timers.v().propagatorTimer.end();
     }
