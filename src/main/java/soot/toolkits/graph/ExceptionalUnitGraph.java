@@ -255,47 +255,50 @@ public class ExceptionalUnitGraph extends UnitGraph implements ExceptionalGraph<
    *         extending <code>ExceptionalUnitGraph</code>. If a <code>Unit</code> throws one or more exceptions which are
    *         caught within the method, it will be mapped to a <code>Collection</code> of <code>ExceptionDest</code>s
    *         describing the sets of exceptions that the <code>Unit</code> might throw to each {@link Trap}. But if all of a
-   *         <code>Unit</code>'s exceptions escape the method, it will be mapped to <code>null</code, rather than to a
+   *         <code>Unit</code>'s exceptions escape the method, it will be mapped to <code>null</code>, rather than to a
    *         <code>Collection</code> containing a single <code>ExceptionDest</code> with a <code>null</code> trap. (The
    *         special case for <code>Unit</code>s with no caught exceptions allows <code>buildExceptionDests()</code> to
    *         ignore completely <code>Unit</code>s which are outside the scope of all <code>Trap</code>s.)
    *         </p>
    */
   protected Map<Unit, Collection<ExceptionDest>> buildExceptionDests(ThrowAnalysis throwAnalysis) {
-    Chain<Unit> units = body.getUnits();
-    Map<Unit, ThrowableSet> unitToUncaughtThrowables = new LinkedHashMap<Unit, ThrowableSet>(units.size());
     Map<Unit, Collection<ExceptionDest>> result = null;
 
-    // Record the caught exceptions.
-    for (Trap trap : body.getTraps()) {
-      RefType catcher = trap.getException().getType();
-      for (Iterator<Unit> unitIt = units.iterator(trap.getBeginUnit(), units.getPredOf(trap.getEndUnit())); unitIt
-          .hasNext();) {
-        Unit unit = unitIt.next();
-        ThrowableSet thrownSet = unitToUncaughtThrowables.get(unit);
-        if (thrownSet == null) {
-          thrownSet = throwAnalysis.mightThrow(unit);
-        }
+    final Chain<Trap> traps = body.getTraps();
+    if (!traps.isEmpty()) {
+      final ThrowableSet EMPTY = ThrowableSet.Manager.v().EMPTY;
+      final Chain<Unit> units = body.getUnits();
+      final Map<Unit, ThrowableSet> unitToUncaughtThrowables = new LinkedHashMap<Unit, ThrowableSet>(units.size());
 
-        ThrowableSet.Pair catchableAs = thrownSet.whichCatchableAs(catcher);
-        if (!catchableAs.getCaught().equals(ThrowableSet.Manager.v().EMPTY)) {
-          result = addDestToMap(result, unit, trap, catchableAs.getCaught());
-          unitToUncaughtThrowables.put(unit, catchableAs.getUncaught());
-        } else {
-          assert thrownSet.equals(catchableAs.getUncaught()) : "ExceptionalUnitGraph.buildExceptionDests(): "
-              + "catchableAs.caught == EMPTY, but catchableAs.uncaught != thrownSet" + System.getProperty("line.separator")
-              + body.getMethod().getSubSignature() + " Unit: " + unit.toString() + System.getProperty("line.separator")
-              + " catchableAs.getUncaught() == " + catchableAs.getUncaught().toString()
-              + System.getProperty("line.separator") + " thrownSet == " + thrownSet.toString();
+      // Record the caught exceptions.
+      for (Trap trap : traps) {
+        RefType catcher = trap.getException().getType();
+        for (Iterator<Unit> it = units.iterator(trap.getBeginUnit(), units.getPredOf(trap.getEndUnit())); it.hasNext();) {
+          Unit unit = it.next();
+          ThrowableSet thrownSet = unitToUncaughtThrowables.get(unit);
+          if (thrownSet == null) {
+            thrownSet = throwAnalysis.mightThrow(unit);
+          }
+
+          ThrowableSet.Pair catchableAs = thrownSet.whichCatchableAs(catcher);
+          if (!EMPTY.equals(catchableAs.getCaught())) {
+            result = addDestToMap(result, unit, trap, catchableAs.getCaught());
+            unitToUncaughtThrowables.put(unit, catchableAs.getUncaught());
+          } else {
+            assert thrownSet.equals(catchableAs.getUncaught()) : "ExceptionalUnitGraph.buildExceptionDests(): "
+                + "catchableAs.caught == EMPTY, but catchableAs.uncaught != thrownSet" + System.getProperty("line.separator")
+                + body.getMethod().getSubSignature() + " Unit: " + unit.toString() + System.getProperty("line.separator")
+                + " catchableAs.getUncaught() == " + catchableAs.getUncaught().toString()
+                + System.getProperty("line.separator") + " thrownSet == " + thrownSet.toString();
+          }
         }
       }
-    }
 
-    for (Map.Entry<Unit, ThrowableSet> entry : unitToUncaughtThrowables.entrySet()) {
-      Unit unit = entry.getKey();
-      ThrowableSet escaping = entry.getValue();
-      if (escaping != ThrowableSet.Manager.v().EMPTY) {
-        result = addDestToMap(result, unit, null, escaping);
+      for (Map.Entry<Unit, ThrowableSet> entry : unitToUncaughtThrowables.entrySet()) {
+        ThrowableSet escaping = entry.getValue();
+        if (escaping != EMPTY) {
+          result = addDestToMap(result, entry.getKey(), null, escaping);
+        }
       }
     }
     return result == null ? Collections.emptyMap() : result;
@@ -322,8 +325,8 @@ public class ExceptionalUnitGraph extends UnitGraph implements ExceptionalGraph<
    * @return a <code>Map</code> which whose contents are equivalent to the input <code>map</code>, plus the information that
    *         <code>u</code> throws <code>caught</code> to <code>t</code>.
    */
-  private Map<Unit, Collection<ExceptionDest>> addDestToMap(Map<Unit, Collection<ExceptionDest>> map, Unit u, Trap t,
-      ThrowableSet caught) {
+  protected Map<Unit, Collection<ExceptionDest>> addDestToMap(Map<Unit, Collection<ExceptionDest>> map, Unit u,
+      Trap t, ThrowableSet caught) {
     Collection<ExceptionDest> dests = (map == null ? null : map.get(u));
     if (dests == null) {
       if (t == null) {
@@ -546,7 +549,7 @@ public class ExceptionalUnitGraph extends UnitGraph implements ExceptionalGraph<
   /**
    * <p>
    * Utility method for checking if a {@link Unit} might have side effects. It simply returns true for any unit which invokes
-   * a method directly or which might invoke static initializers indirectly (by creating a new object or by refering to a
+   * a method directly or which might invoke static initializers indirectly (by creating a new object or by referring to a
    * static field; see sections 2.17.4, 2.17.5, and 5.5 of the Java Virtual Machine Specification).
    * </p>
    *
@@ -667,8 +670,6 @@ public class ExceptionalUnitGraph extends UnitGraph implements ExceptionalGraph<
     Collection<ExceptionDest> result = unitToExceptionDests.get(u);
     if (result == null) {
       ExceptionDest e = new ExceptionDest(null, null) {
-        private ThrowableSet throwables;
-
         @Override
         public ThrowableSet getThrowables() {
           if (null == throwables) {
@@ -677,14 +678,14 @@ public class ExceptionalUnitGraph extends UnitGraph implements ExceptionalGraph<
           return throwables;
         }
       };
-      return Collections.singletonList(e);
+      result = Collections.singletonList(e);
     }
     return result;
   }
 
   public static class ExceptionDest implements ExceptionalGraph.ExceptionDest<Unit> {
-    private Trap trap;
-    private ThrowableSet throwables;
+    private final Trap trap;
+    ThrowableSet throwables;
 
     protected ExceptionDest(Trap trap, ThrowableSet throwables) {
       this.trap = trap;
@@ -712,7 +713,7 @@ public class ExceptionalUnitGraph extends UnitGraph implements ExceptionalGraph<
 
     @Override
     public String toString() {
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       buf.append(getThrowables());
       buf.append(" -> ");
       if (trap == null) {
