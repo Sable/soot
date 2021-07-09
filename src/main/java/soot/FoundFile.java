@@ -22,6 +22,7 @@ package soot;
  * #L%
  */
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,26 +41,33 @@ import java.util.zip.ZipFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import soot.util.SharedCloseable;
+
 public class FoundFile {
   private static final Logger logger = LoggerFactory.getLogger(FoundFile.class);
-  protected File file;
-  private Path path;
-  protected String entryName;
-  protected ZipFile zipFile;
-  protected ZipEntry zipEntry;
-  protected List<InputStream> openedInputStreams;
 
-  public FoundFile(ZipFile file, ZipEntry entry) {
-    this();
-    if (file == null || entry == null) {
-      throw new IllegalArgumentException("Error: The archive and entry cannot be null.");
-    }
-    this.zipFile = file;
-    this.zipEntry = entry;
-  }
+  protected final List<InputStream> openedInputStreams = new ArrayList<InputStream>();
+
+  protected Path path;
+
+  protected File file;
+  protected String entryName;
+
+  protected SharedCloseable<ZipFile> zipFile;
+  protected ZipEntry zipEntry;
+
+  // NOTE: this constructor cannot be supported when using the SharedClosable
+  // without the risk of the ZipFile closing prematurely.
+  // public FoundFile(ZipFile file, ZipEntry entry) {
+  // this();
+  // if (file == null || entry == null) {
+  // throw new IllegalArgumentException("Error: The archive and entry cannot be null.");
+  // }
+  // this.zipFile = file;
+  // this.zipEntry = entry;
+  // }
 
   public FoundFile(String archivePath, String entryName) {
-    this();
     if (archivePath == null || entryName == null) {
       throw new IllegalArgumentException("Error: The archive path and entry name cannot be null.");
     }
@@ -68,7 +76,6 @@ public class FoundFile {
   }
 
   public FoundFile(File file) {
-    this();
     if (file == null) {
       throw new IllegalArgumentException("Error: The file cannot be null.");
     }
@@ -77,14 +84,10 @@ public class FoundFile {
   }
 
   public FoundFile(Path path) {
-    this();
     this.path = path;
   }
 
-  private FoundFile() {
-    this.openedInputStreams = new ArrayList<InputStream>();
-  }
-
+  @Deprecated
   public String getFilePath() {
     return file.getPath();
   }
@@ -94,11 +97,19 @@ public class FoundFile {
   }
 
   public ZipFile getZipFile() {
-    return zipFile;
+    return zipFile != null ? zipFile.get() : null;
   }
 
   public File getFile() {
     return file;
+  }
+
+  public String getAbsolutePath() {
+    try {
+      return file != null ? file.getCanonicalPath() : path.toRealPath().toString();
+    } catch (IOException ex) {
+      return file != null ? file.getAbsolutePath() : path.toAbsolutePath().toString();
+    }
   }
 
   public InputStream inputStream() {
@@ -119,8 +130,8 @@ public class FoundFile {
     } else {
       if (zipFile == null) {
         try {
-          zipFile = new ZipFile(file);
-          zipEntry = zipFile.getEntry(entryName);
+          zipFile = SourceLocator.v().archivePathToZip.getRef(file.getPath());
+          zipEntry = zipFile.get().getEntry(entryName);
           if (zipEntry == null) {
             silentClose();
             throw new RuntimeException(
@@ -132,26 +143,15 @@ public class FoundFile {
               "Error: Failed to open the archive file at path '" + file.getPath() + "' for entry '" + entryName + "'.", e);
         }
       }
-
-      InputStream stream = null;
-      try {
-        stream = zipFile.getInputStream(zipEntry);
+      try (InputStream stream = zipFile.get().getInputStream(zipEntry)) {
         ret = doJDKBugWorkaround(stream, zipEntry.getSize());
       } catch (Exception e) {
         throw new RuntimeException("Error: Failed to open a InputStream for the entry '" + zipEntry.getName()
-            + "' of the archive at path '" + zipFile.getName() + "'.", e);
-      } finally {
-        if (stream != null) {
-          try {
-            stream.close();
-          } catch (IOException e) {
-            // There's not much we can do here
-            logger.debug(e.getMessage(), e);
-          }
-        }
+            + "' of the archive at path '" + zipFile.get().getName() + "'.", e);
       }
     }
 
+    ret = new BufferedInputStream(ret);
     openedInputStreams.add(ret);
     return ret;
   }
@@ -181,9 +181,7 @@ public class FoundFile {
     if (!errs.isEmpty()) {
       String msg = null;
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      PrintStream ps = null;
-      try {
-        ps = new PrintStream(baos, true, "utf-8");
+      try (PrintStream ps = new PrintStream(baos, true, "utf-8")) {
         ps.println("Error: Failed to close all opened resources. The following exceptions were thrown in the process: ");
         int i = 0;
         for (Throwable t : errs) {
@@ -195,8 +193,6 @@ public class FoundFile {
         msg = new String(baos.toByteArray(), StandardCharsets.UTF_8);
       } catch (Exception e) {
         // Do nothing as this will never occur
-      } finally {
-        ps.close();
       }
       throw new RuntimeException(msg);
     }
@@ -217,13 +213,11 @@ public class FoundFile {
     }
   }
 
-  private InputStream doJDKBugWorkaround(InputStream is, long size) throws IOException {
+  private static InputStream doJDKBugWorkaround(InputStream is, long size) throws IOException {
     int sz = (int) size;
-    byte[] buf = new byte[sz];
+    final byte[] buf = new byte[sz];
     final int N = 1024;
-    int ln = 0;
-    int count = 0;
-    while (sz > 0 && (ln = is.read(buf, count, Math.min(N, sz))) != -1) {
+    for (int ln = 0, count = 0; sz > 0 && (ln = is.read(buf, count, Math.min(N, sz))) != -1;) {
       count += ln;
       sz -= ln;
     }

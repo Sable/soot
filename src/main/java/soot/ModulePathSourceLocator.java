@@ -47,6 +47,9 @@ import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import soot.JavaClassProvider.JarException;
 import soot.asm.AsmModuleClassProvider;
 
@@ -56,12 +59,14 @@ import soot.asm.AsmModuleClassProvider;
  * @author Andreas Dann
  */
 public class ModulePathSourceLocator extends SourceLocator {
+  private static final Logger logger = LoggerFactory.getLogger(ModulePathSourceLocator.class);
 
   public static final String DUMMY_CLASSPATH_JDK9_FS = "VIRTUAL_FS_FOR_JDK";
 
-  private List<String> sourcePath;
-
+  private final HashMap<String, Path> moduleNameToPath = new HashMap<String, Path>();
   private Set<String> classesToLoad;
+  private List<String> modulePath;
+  private int next = 0;
 
   public ModulePathSourceLocator(Singletons.Global g) {
     super(g);
@@ -73,25 +78,24 @@ public class ModulePathSourceLocator extends SourceLocator {
 
   @Override
   public ClassSource getClassSource(String className) {
-
     ModuleUtil.ModuleClassNameWrapper wrapper = ModuleUtil.v().makeWrapper(className);
-
     return getClassSource(wrapper.getClassName(), wrapper.getModuleNameOptional());
   }
 
   /**
    * Given a class name, uses the soot-module-path to return a ClassSource for the given class.
    */
-  public ClassSource getClassSource(String className, com.google.common.base.Optional<String> moduleName) {
-    String appendToPath = "";
-    if (moduleName.isPresent()) {
-      appendToPath = moduleName.get() + ":";
-    }
-    if (classesToLoad == null) {
-      classesToLoad = new HashSet<>();
-      classesToLoad.addAll(ModuleScene.v().getBasicClasses());
-      for (SootClass c : ModuleScene.v().getApplicationClasses()) {
-        classesToLoad.add(c.getName());
+  public ClassSource getClassSource(String className, Optional<String> moduleName) {
+    String appendToPath = moduleName.isPresent() ? moduleName.get() + ":" : "";
+
+    {
+      Set<String> classesToLoad = this.classesToLoad;
+      if (classesToLoad == null) {
+        classesToLoad = new HashSet<String>(ModuleScene.v().getBasicClasses());
+        for (SootClass c : ModuleScene.v().getApplicationClasses()) {
+          classesToLoad.add(c.getName());
+        }
+        this.classesToLoad = classesToLoad;
       }
     }
 
@@ -121,16 +125,13 @@ public class ModulePathSourceLocator extends SourceLocator {
   }
 
   public static List<String> explodeModulePath(String classPath) {
-    List<String> ret = new ArrayList<>();
+    List<String> ret = new ArrayList<String>();
 
-    StringTokenizer tokenizer = new StringTokenizer(classPath, File.pathSeparator);
-    while (tokenizer.hasMoreTokens()) {
+    for (StringTokenizer tokenizer = new StringTokenizer(classPath, File.pathSeparator); tokenizer.hasMoreTokens();) {
       String originalDir = tokenizer.nextToken();
-      String canonicalDir;
       try {
-
-        canonicalDir = new File(originalDir).getCanonicalPath();
-        if (originalDir.equals(DUMMY_CLASSPATH_JDK9_FS)) {
+        String canonicalDir = new File(originalDir).getCanonicalPath();
+        if (DUMMY_CLASSPATH_JDK9_FS.equals(originalDir)) {
           canonicalDir = "jrt:/";
         }
         ret.add(canonicalDir);
@@ -141,12 +142,10 @@ public class ModulePathSourceLocator extends SourceLocator {
     return ret;
   }
 
+  @Override
   public void additionalClassLoader(ClassLoader c) {
     additionalClassLoaders.add(c);
   }
-
-  private List<String> modulePath;
-  private int next = 0;
 
   private boolean modulePathHasNextEntry() {
     return this.next < this.modulePath.size();
@@ -165,19 +164,19 @@ public class ModulePathSourceLocator extends SourceLocator {
 
   @Override
   public List<String> sourcePath() {
+    List<String> sourcePath = this.sourcePath;
     if (sourcePath == null) {
-      sourcePath = new ArrayList<>();
+      sourcePath = new ArrayList<String>();
       for (String dir : modulePath) {
         ClassSourceType cst = getClassSourceType(dir);
         if (cst != ClassSourceType.apk && cst != ClassSourceType.jar && cst != ClassSourceType.zip) {
           sourcePath.add(dir);
         }
       }
+      this.sourcePath = sourcePath;
     }
     return sourcePath;
   }
-
-  private final HashMap<String, Path> moduleNameToPath = new HashMap<>();
 
   /**
    * For backward compatibility returns classes in the form of module:classname
@@ -188,18 +187,13 @@ public class ModulePathSourceLocator extends SourceLocator {
    */
   @Override
   public List<String> getClassesUnder(String aPath) {
-
-    Map<String, List<String>> moduleClasses = getClassUnderModulePath(aPath);
-    List<String> classes = new ArrayList<>();
-    for (Map.Entry<String, List<String>> entry : moduleClasses.entrySet()) {
+    List<String> classes = new ArrayList<String>();
+    for (Map.Entry<String, List<String>> entry : getClassUnderModulePath(aPath).entrySet()) {
       for (String className : entry.getValue()) {
-        String moduleClassNameConcatenation = entry.getKey() + ":" + className;
-        classes.add(moduleClassNameConcatenation);
+        classes.add(entry.getKey() + ':' + className);
       }
     }
-
     return classes;
-
   }
 
   /**
@@ -207,10 +201,8 @@ public class ModulePathSourceLocator extends SourceLocator {
    * If the entry is a regular file then it is assumed to be a packaged module.
    */
   public Map<String, List<String>> getClassUnderModulePath(String aPath) {
-    Map<String, List<String>> mapModuleClasses = new HashMap<>();
-    Path path = null;
-    ClassSourceType type = getClassSourceType(aPath);
-    switch (type) {
+    Path path;
+    switch (getClassSourceType(aPath)) {
       case jar:
         path = Paths.get(aPath);
         break;
@@ -224,6 +216,7 @@ public class ModulePathSourceLocator extends SourceLocator {
         path = getRootModulesPathOfJDK();
         break;
       case unknown:
+        path = null;
         break;
       default:
         path = Paths.get(aPath);
@@ -240,24 +233,23 @@ public class ModulePathSourceLocator extends SourceLocator {
     try {
       attrs = Files.readAttributes(path, BasicFileAttributes.class);
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.debug(e.getMessage(), e);
     }
+    assert (attrs != null);
+    Map<String, List<String>> mapModuleClasses = new HashMap<String, List<String>>();
     if (attrs.isDirectory()) {
-      Path mi = path.resolve(SootModuleInfo.MODULE_INFO_FILE);
-      if (!Files.exists(mi)) {
+      if (!Files.exists(path.resolve(SootModuleInfo.MODULE_INFO_FILE))) {
         // assume a directory of modules
         mapModuleClasses.putAll(discoverModulesIn(path));
       } else {
         // found an exploded module
         mapModuleClasses.putAll(buildModuleForExplodedModule(path));
       }
-    }
-    // found a jar that is either a modular jar or a simple jar that must be transformed to an automatic module
-    else if (attrs.isRegularFile() && path.getFileName().toString().endsWith(".jar")) {
+    } else if (attrs.isRegularFile() && path.getFileName().toString().endsWith(".jar")) {
+      // found a jar that is either a modular jar or a simple jar that must be transformed to an automatic module
       mapModuleClasses.putAll(buildModuleForJar(path));
     }
     return mapModuleClasses;
-
   }
 
   public static Path getRootModulesPathOfJDK() {
@@ -265,7 +257,8 @@ public class ModulePathSourceLocator extends SourceLocator {
     if (p.endsWith("modules")) {
       return p;
     }
-    //Due to a bug in some JDKs, p not necessarily points to modules directly: https://bugs.openjdk.java.net/browse/JDK-8227076
+    // Due to a bug in some JDKs, p not necessarily points to modules directly:
+    // https://bugs.openjdk.java.net/browse/JDK-8227076
     return p.resolve("modules");
   }
 
@@ -277,7 +270,7 @@ public class ModulePathSourceLocator extends SourceLocator {
    * @return the found modules and their classes
    */
   private Map<String, List<String>> discoverModulesIn(Path path) {
-    Map<String, List<String>> mapModuleClasses = new HashMap<>();
+    Map<String, List<String>> mapModuleClasses = new HashMap<String, List<String>>();
 
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
       for (Path entry : stream) {
@@ -289,8 +282,7 @@ public class ModulePathSourceLocator extends SourceLocator {
         }
 
         if (attrs.isDirectory()) {
-          Path mi = entry.resolve(SootModuleInfo.MODULE_INFO_FILE);
-          if (Files.exists(mi)) {
+          if (Files.exists(entry.resolve(SootModuleInfo.MODULE_INFO_FILE))) {
             mapModuleClasses.putAll(buildModuleForExplodedModule(entry));
           }
         } else if (attrs.isRegularFile() && entry.getFileName().toString().endsWith(".jar")) {
@@ -299,7 +291,7 @@ public class ModulePathSourceLocator extends SourceLocator {
 
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.debug(e.getMessage(), e);
     }
     return mapModuleClasses;
   }
@@ -312,7 +304,7 @@ public class ModulePathSourceLocator extends SourceLocator {
    * @return the module and its containing classes
    */
   private Map<String, List<String>> buildModuleForJar(Path jar) {
-    Map<String, List<String>> moduleClassMap = new HashMap<>();
+    Map<String, List<String>> moduleClassMap = new HashMap<String, List<String>>();
 
     try (FileSystem zipFileSystem = FileSystems.newFileSystem(jar, this.getClass().getClassLoader())) {
       Path mi = zipFileSystem.getPath(SootModuleInfo.MODULE_INFO_FILE);
@@ -322,37 +314,33 @@ public class ModulePathSourceLocator extends SourceLocator {
         for (ClassProvider cp : classProviders) {
           if (cp instanceof AsmModuleClassProvider) {
             String moduleName = ((AsmModuleClassProvider) cp).getModuleName(foundFile);
-            SootModuleInfo moduleInfo
-                = (SootModuleInfo) SootModuleResolver.v().makeClassRef(SootModuleInfo.MODULE_INFO, Optional.of(moduleName));
+            SootModuleInfo moduleInfo =
+                (SootModuleInfo) SootModuleResolver.v().makeClassRef(SootModuleInfo.MODULE_INFO, Optional.of(moduleName));
             this.moduleNameToPath.put(moduleName, jar);
             List<String> classesInJar = super.getClassesUnder(jar.toAbsolutePath().toString());
             for (String foundClass : classesInJar) {
               int index = foundClass.lastIndexOf('.');
               if (index > 0) {
-                String packageName = foundClass.substring(0, index);
-                moduleInfo.addModulePackage(packageName);
+                moduleInfo.addModulePackage(foundClass.substring(0, index));
               }
             }
             moduleClassMap.put(moduleName, classesInJar);
-
           }
         }
       } else {
         // no module-info treat as automatic module
         // create module name from jar
-        String filename = jar.getFileName().toString();
-
+        //
         // make module base on the filname of the jar
-        String moduleName = createModuleNameForAutomaticModule(filename);
-        boolean containsClass = ModuleScene.v().containsClass(SootModuleInfo.MODULE_INFO, Optional.of(moduleName));
         SootModuleInfo moduleInfo;
-        if (!containsClass) {
+        String moduleName = createModuleNameForAutomaticModule(jar.getFileName().toString());
+        if (!ModuleScene.v().containsClass(SootModuleInfo.MODULE_INFO, Optional.of(moduleName))) {
           moduleInfo = new SootModuleInfo(SootModuleInfo.MODULE_INFO, moduleName, true);
           Scene.v().addClass(moduleInfo);
           moduleInfo.setApplicationClass();
         } else {
           moduleInfo = (SootModuleInfo) ModuleScene.v().getSootClass(SootModuleInfo.MODULE_INFO, Optional.of(moduleName));
-          if (!(moduleInfo.resolvingLevel() == SootClass.DANGLING)) {
+          if (moduleInfo.resolvingLevel() != SootClass.DANGLING) {
             return moduleClassMap;
           }
         }
@@ -362,8 +350,7 @@ public class ModulePathSourceLocator extends SourceLocator {
         for (String foundClass : classesInJar) {
           int index = foundClass.lastIndexOf('.');
           if (index > 0) {
-            String packageName = foundClass.substring(0, index);
-            moduleInfo.addModulePackage(packageName);
+            moduleInfo.addModulePackage(foundClass.substring(0, index));
           }
         }
         moduleInfo.setResolvingLevel(SootClass.BODIES);
@@ -373,7 +360,7 @@ public class ModulePathSourceLocator extends SourceLocator {
       }
 
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.debug(e.getMessage(), e);
     }
     return moduleClassMap;
   }
@@ -387,36 +374,35 @@ public class ModulePathSourceLocator extends SourceLocator {
    * @return the name of the automatic module
    */
   private String createModuleNameForAutomaticModule(String filename) {
-    int i = filename.lastIndexOf(File.separator);
+    int i = filename.lastIndexOf(File.separatorChar);
     if (i != -1) {
       filename = filename.substring(i + 1);
     }
 
-    // drop teh file extension .jar
+    // drop the file extension .jar
     String moduleName = filename.substring(0, filename.length() - 4);
 
     // find first occurrence of -${NUMBER}. or -${NUMBER}$
     // according to the java 9 spec and current implementation, version numbers are ignored when naming automatic modules
-    Matcher matcher = Pattern.compile("-(\\d+(\\.|$))").matcher(moduleName);
+    Matcher matcher = Patterns.VERSION.matcher(moduleName);
     if (matcher.find()) {
-      int start = matcher.start();
-      moduleName = moduleName.substring(0, start);
+      moduleName = moduleName.substring(0, matcher.start());
     }
-    moduleName = Pattern.compile("[^A-Za-z0-9]").matcher(moduleName).replaceAll(".");
+    moduleName = Patterns.ALPHA_NUM.matcher(moduleName).replaceAll(".");
 
     // remove all repeating dots
-    moduleName = Pattern.compile("(\\.)(\\1)+").matcher(moduleName).replaceAll(".");
+    moduleName = Patterns.REPEATING_DOTS.matcher(moduleName).replaceAll(".");
 
     // remove leading dots
     int len = moduleName.length();
     if (len > 0 && moduleName.charAt(0) == '.') {
-      moduleName = Pattern.compile("^\\.").matcher(moduleName).replaceAll("");
+      moduleName = Patterns.LEADING_DOTS.matcher(moduleName).replaceAll("");
     }
 
     // remove trailing dots
     len = moduleName.length();
     if (len > 0 && moduleName.charAt(len - 1) == '.') {
-      moduleName = Pattern.compile("\\.$").matcher(moduleName).replaceAll("");
+      moduleName = Patterns.TRAILING_DOTS.matcher(moduleName).replaceAll("");
     }
 
     return moduleName;
@@ -430,35 +416,25 @@ public class ModulePathSourceLocator extends SourceLocator {
    * @return the module and its classes
    */
   private Map<String, List<String>> buildModuleForExplodedModule(Path dir) {
-    Map<String, List<String>> moduleClassesMap = new HashMap<>();
+    Map<String, List<String>> moduleClassesMap = new HashMap<String, List<String>>();
     Path mi = dir.resolve(SootModuleInfo.MODULE_INFO_FILE);
 
     for (ClassProvider cp : classProviders) {
       if (cp instanceof AsmModuleClassProvider) {
-
-        FoundFile foundFile = new FoundFile(mi);
-        // try (InputStream in = Files.newInputStream(mi)) {
-
-        String moduleName = ((AsmModuleClassProvider) cp).getModuleName(foundFile);
-        SootModuleInfo moduleInfo
-            = (SootModuleInfo) SootModuleResolver.v().makeClassRef(SootModuleInfo.MODULE_INFO, Optional.of(moduleName));
+        String moduleName = ((AsmModuleClassProvider) cp).getModuleName(new FoundFile(mi));
+        SootModuleInfo moduleInfo =
+            (SootModuleInfo) SootModuleResolver.v().makeClassRef(SootModuleInfo.MODULE_INFO, Optional.of(moduleName));
         this.moduleNameToPath.put(moduleName, dir);
 
         List<String> classes = getClassesUnderDirectory(dir);
         for (String foundClass : classes) {
           int index = foundClass.lastIndexOf('.');
           if (index > 0) {
-
-            String packageName = foundClass.substring(0, index);
-            moduleInfo.addModulePackage(packageName);
+            moduleInfo.addModulePackage(foundClass.substring(0, index));
           }
         }
 
         moduleClassesMap.put(moduleName, classes);
-
-        /*
-         * } catch (IOException e) { e.printStackTrace(); }
-         */
       }
     }
     return moduleClassesMap;
@@ -467,32 +443,29 @@ public class ModulePathSourceLocator extends SourceLocator {
   /* This is called after sootClassPath has been defined. */
   @Override
   public Set<String> classesInDynamicPackage(String str) {
-    HashSet<String> set = new HashSet<>(0);
-    StringTokenizer strtok
-        = new StringTokenizer(ModuleScene.v().getSootModulePath(), String.valueOf(File.pathSeparatorChar));
+    HashSet<String> set = new HashSet<String>(0);
+    StringTokenizer strtok = new StringTokenizer(ModuleScene.v().getSootModulePath(), File.pathSeparator);
     while (strtok.hasMoreTokens()) {
       String path = strtok.nextToken();
 
       // For jimple files
-      List<String> l = super.getClassesUnder(path);
-      for (String filename : l) {
+      for (String filename : super.getClassesUnder(path)) {
         if (filename.startsWith(str)) {
           set.add(filename);
         }
       }
 
-      // For class files;
-      path = path + File.pathSeparatorChar;
-      StringTokenizer tokenizer = new StringTokenizer(str, ".");
-      while (tokenizer.hasMoreTokens()) {
-        path = path + tokenizer.nextToken();
-        if (tokenizer.hasMoreTokens()) {
-          path = path + File.pathSeparatorChar;
+      // For class files
+      StringBuilder sb = new StringBuilder(path);
+      sb.append(File.pathSeparatorChar);
+      for (StringTokenizer tok = new StringTokenizer(str, "."); tok.hasMoreTokens();) {
+        sb.append(tok.nextToken());
+        if (tok.hasMoreTokens()) {
+          sb.append(File.pathSeparatorChar);
         }
       }
-      l = super.getClassesUnder(path);
-      for (String string : l) {
-        set.add(str + "." + string);
+      for (String string : super.getClassesUnder(sb.toString())) {
+        set.add(str + '.' + string);
       }
     }
     return set;
@@ -503,25 +476,24 @@ public class ModulePathSourceLocator extends SourceLocator {
    */
   @Override
   public FoundFile lookupInClassPath(String fileName) {
-
     return lookUpInModulePath(fileName);
-
   }
 
   private ClassSourceType getClassSourceType(Path path) {
-    String stringPath = path.toUri().toString();
-    if (stringPath.startsWith("jrt:/")) {
+    if (path.toUri().toString().startsWith("jrt:/")) {
       return ClassSourceType.jrt;
+    } else {
+      return super.getClassSourceType(path.toAbsolutePath().toString());
     }
-    return super.getClassSourceType(path.toAbsolutePath().toString());
   }
 
   @Override
   protected ClassSourceType getClassSourceType(String path) {
     if (path.startsWith("jrt:/")) {
       return ClassSourceType.jrt;
+    } else {
+      return super.getClassSourceType(path);
     }
-    return super.getClassSourceType(path);
   }
 
   public FoundFile lookUpInModulePath(String fileName) {
@@ -535,30 +507,25 @@ public class ModulePathSourceLocator extends SourceLocator {
 
     // look if we know where the module is
     Path foundModulePath = discoverModule(moduleName);
-
-    FoundFile ret = null;
     if (foundModulePath == null) {
       return null;
     }
     // transform the path to a String to reuse the
-    String dir = foundModulePath.toAbsolutePath().toString();
-    if (foundModulePath.toUri().toString().startsWith("jrt:/")) {
-      dir = foundModulePath.toUri().toString();
-    }
+    String uriString = foundModulePath.toUri().toString();
+    String dir = uriString.startsWith("jrt:/") ? uriString : foundModulePath.toAbsolutePath().toString();
 
     ClassSourceType cst = getClassSourceType(foundModulePath);
-    if (cst == ClassSourceType.zip || cst == ClassSourceType.jar) {
-      ret = lookupInArchive(dir, className);
-    } else if (cst == ClassSourceType.directory) {
-      ret = lookupInDir(dir, className);
-    } else if (cst == ClassSourceType.jrt) {
-      ret = lookUpInVirtualFileSystem(dir, className);
+    if (null != cst) {
+      switch (cst) {
+        case zip:
+        case jar:
+          return lookupInArchive(dir, className);
+        case directory:
+          return lookupInDir(dir, className);
+        case jrt:
+          return lookUpInVirtualFileSystem(dir, className);
+      }
     }
-
-    if (ret != null) {
-      return ret;
-    }
-
     return null;
   }
 
@@ -575,8 +542,7 @@ public class ModulePathSourceLocator extends SourceLocator {
       return pathToModule;
     }
     while (modulePathHasNextEntry()) {
-      String path = modulePath.get(next);
-      getClassUnderModulePath(path);
+      getClassUnderModulePath(modulePath.get(next));
       next++;
       pathToModule = moduleNameToPath.get(moduleName);
       if (pathToModule != null) {
@@ -586,15 +552,14 @@ public class ModulePathSourceLocator extends SourceLocator {
     return null;
   }
 
-  private FoundFile lookupInDir(String dir, String fileName) {
-    Path dirPath = Paths.get(dir);
-    Path foundFile = dirPath.resolve(fileName);
+  @Override
+  protected FoundFile lookupInDir(String dir, String fileName) {
+    Path foundFile = Paths.get(dir).resolve(fileName);
     if (foundFile != null && Files.isRegularFile(foundFile)) {
       return new FoundFile(foundFile);
+    } else {
+      return null;
     }
-
-    return null;
-
   }
 
   /**
@@ -606,18 +571,19 @@ public class ModulePathSourceLocator extends SourceLocator {
    *          the filename to search
    * @return the FoundFile
    */
+  @Override
   protected FoundFile lookupInArchive(String archivePath, String fileName) {
     Path archive = Paths.get(archivePath);
     try (FileSystem zipFileSystem = FileSystems.newFileSystem(archive, this.getClass().getClassLoader())) {
       Path entry = zipFileSystem.getPath(fileName);
       if (entry == null || !Files.isRegularFile(entry)) {
         return null;
+      } else {
+        return new FoundFile(archive.toAbsolutePath().toString(), fileName);
       }
-      return new FoundFile(archive.toAbsolutePath().toString(), fileName);
     } catch (IOException e) {
       throw new RuntimeException(
           "Caught IOException " + e + " looking in archive file " + archivePath + " for file " + fileName);
-
     }
   }
 
@@ -635,17 +601,16 @@ public class ModulePathSourceLocator extends SourceLocator {
     Path foundFile = Paths.get(URI.create(archivePath)).resolve(fileName);
     if (foundFile != null && Files.isRegularFile(foundFile)) {
       return new FoundFile(foundFile);
+    } else {
+      return null;
     }
-
-    return null;
   }
 
   @Override
   protected void setupClassProviders() {
-    classProviders = new LinkedList<>();
-    ClassProvider classFileClassProvider = new AsmModuleClassProvider();
-    classProviders.add(classFileClassProvider);
-
+    LinkedList<ClassProvider> classProviders = new LinkedList<ClassProvider>();
+    classProviders.add(new AsmModuleClassProvider());
+    this.classProviders = classProviders;
   }
 
   /**
@@ -656,66 +621,62 @@ public class ModulePathSourceLocator extends SourceLocator {
    * @return List of found classes
    */
   private List<String> getClassesUnderDirectory(Path aPath) {
-    List<String> classes = new ArrayList<>();
     ClassSourceType cst = getClassSourceType(aPath);
+    if (cst != ClassSourceType.directory && cst != ClassSourceType.jrt) {
+      throw new RuntimeException("Invalid class source type");
+    }
 
-    if (cst == ClassSourceType.directory || cst == ClassSourceType.jrt) {
+    List<String> classes = new ArrayList<String>();
+    FileVisitor<Path> fileVisitor = new FileVisitor<Path>() {
 
-      FileVisitor<Path> fileVisitor = new FileVisitor<Path>() {
-
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-          return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-
-          // Note that some FileSystem implementations used by Path use even on Windows
-          // "/" as path separator. Therefore we have to use the file-system specific path separator
-          // instead of the system specific one (File.separatorChar).
-          String fileName = aPath.relativize(file).toString().replace(file.getFileSystem().getSeparator(), ".");
-
-          if (fileName.endsWith(".class")) {
-            int index = fileName.lastIndexOf(".class");
-            classes.add(fileName.substring(0, index));
-          }
-
-          if (fileName.endsWith(".jimple")) {
-            int index = fileName.lastIndexOf(".jimple");
-            classes.add(fileName.substring(0, index));
-          }
-
-          if (fileName.endsWith(".java")) {
-            int index = fileName.lastIndexOf(".java");
-            classes.add(fileName.substring(0, index));
-          }
-
-          return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-          return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-          return FileVisitResult.CONTINUE;
-        }
-
-      };
-      try {
-        Files.walkFileTree(aPath, fileVisitor);
-      } catch (IOException e) {
-        e.printStackTrace();
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        return FileVisitResult.CONTINUE;
       }
 
-    } else {
-      throw new
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        // Note that some FileSystem implementations used by Path use even on Windows
+        // "/" as path separator. Therefore we have to use the file-system specific path
+        //  separator instead of the system specific one (File.separatorChar).
+        String fileName = aPath.relativize(file).toString().replace(file.getFileSystem().getSeparator(), ".");
+        if (fileName.endsWith(".class")) {
+          classes.add(fileName.substring(0, fileName.lastIndexOf(".class")));
+        } else if (fileName.endsWith(".jimple")) {
+          classes.add(fileName.substring(0, fileName.lastIndexOf(".jimple")));
+        } else if (fileName.endsWith(".java")) {
+          classes.add(fileName.substring(0, fileName.lastIndexOf(".java")));
+        }
+        return FileVisitResult.CONTINUE;
+      }
 
-      RuntimeException("Invalid class source type");
+      @Override
+      public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        return FileVisitResult.CONTINUE;
+      }
+
+      @Override
+      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        return FileVisitResult.CONTINUE;
+      }
+    };
+    try {
+      Files.walkFileTree(aPath, fileVisitor);
+    } catch (IOException e) {
+      logger.debug(e.getMessage(), e);
     }
+
     return classes;
+  }
+
+  /**
+   * Lazy-initialized cache of compiled patterns.
+   */
+  private static class Patterns {
+    final static Pattern VERSION = Pattern.compile("-(\\d+(\\.|$))");
+    final static Pattern ALPHA_NUM = Pattern.compile("[^A-Za-z0-9]");
+    final static Pattern REPEATING_DOTS = Pattern.compile("(\\.)(\\1)+");
+    final static Pattern LEADING_DOTS = Pattern.compile("^\\.");
+    final static Pattern TRAILING_DOTS = Pattern.compile("\\.$");
   }
 }
