@@ -96,17 +96,6 @@ public class BafASMBackend extends AbstractASMBackend {
   protected final Map<Local, Integer> localToSlot = new HashMap<Local, Integer>();
 
   /**
-   * Returns the ASM Label for a given Unit that is the target of a branch or jump
-   *
-   * @param target
-   *          The unit that is the branch target
-   * @return The Label that specifies this unit
-   */
-  protected Label getBranchTargetLabel(Unit target) {
-    return branchTargetLabels.get(target);
-  }
-
-  /**
    * Creates a new BafASMBackend with a given enforced java version
    *
    * @param sc
@@ -117,6 +106,17 @@ public class BafASMBackend extends AbstractASMBackend {
    */
   public BafASMBackend(SootClass sc, int javaVersion) {
     super(sc, javaVersion);
+  }
+
+  /**
+   * Returns the ASM Label for a given Unit that is the target of a branch or jump
+   *
+   * @param target
+   *          The unit that is the branch target
+   * @return The Label that specifies this unit
+   */
+  protected Label getBranchTargetLabel(Unit target) {
+    return branchTargetLabels.get(target);
   }
 
   /*
@@ -137,23 +137,32 @@ public class BafASMBackend extends AbstractASMBackend {
     }
 
     for (Unit u : body.getUnits()) {
-      if (minVersion == Options.java_version_1_9) {
-        return minVersion;
+      if (minVersion >= Options.java_version_1_9) {
+        // Stop early since no case below goes above 1.9
+        break;
       }
       if (u instanceof DynamicInvokeInst) {
         minVersion = Math.max(minVersion, Options.java_version_1_7);
-      }
-      if (u instanceof PushInst) {
+      } else if (u instanceof SpecialInvokeInst) {
+        // INVOKESPECIAL can't be used with interfaces prior to Java 8
+        if (((SpecialInvokeInst) u).getMethodRef().getDeclaringClass().isInterface()) {
+          minVersion = Math.max(minVersion, Options.java_version_1_8);
+        }
+      } else if (u instanceof PushInst) {
         Constant constant = ((PushInst) u).getConstant();
         if (constant instanceof ClassConstant) {
           minVersion = Math.max(minVersion, Options.java_version_1_5);
         }
         String typeString = constant.getType().toQuotedString();
-        if (PolymorphicMethodRef.METHODHANDLE_SIGNATURE.equals(typeString)) {
-          minVersion = Math.max(minVersion, Options.java_version_1_7);
-        }
-        if (PolymorphicMethodRef.VARHANDLE_SIGNATURE.equals(typeString)) {
-          minVersion = Math.max(minVersion, Options.java_version_1_9);
+        if (typeString != null) {
+          switch (typeString) {
+            case PolymorphicMethodRef.VARHANDLE_SIGNATURE:
+              minVersion = Math.max(minVersion, Options.java_version_1_9);
+              break;
+            case PolymorphicMethodRef.METHODHANDLE_SIGNATURE:
+              minVersion = Math.max(minVersion, Options.java_version_1_7);
+              break;
+          }
         }
       }
     }

@@ -392,6 +392,7 @@ public class Options extends OptionsBase {
     public static final int <xsl:copy-of select="$name"/>_<xsl:value-of select="translate(.,'-. ','___')"/> = <xsl:value-of select="$number"/>;<xsl:text/>
             </xsl:for-each>
         </xsl:for-each>
+    public static final int <xsl:copy-of select="$name"/>_MAX = <xsl:value-of select="count(value)"/>;<xsl:text/>
     </xsl:template>
 
     <!--*************************************************************************-->
