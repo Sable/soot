@@ -23,6 +23,7 @@ package soot;
  * #L%
  */
 
+import java.util.Objects;
 import soot.jimple.paddle.PaddleField;
 import soot.jimple.spark.pag.SparkField;
 import soot.options.Options;
@@ -33,6 +34,7 @@ import soot.util.Numberable;
  * Soot representation of a Java field. Can be declared to belong to a SootClass.
  */
 public class SootField extends AbstractHost implements ClassMember, SparkField, Numberable, PaddleField {
+
   protected String name;
   protected Type type;
   protected int modifiers;
@@ -254,5 +256,10 @@ public class SootField extends AbstractHost implements ClassMember, SparkField, 
 
   public SootFieldRef makeRef() {
     return Scene.v().makeFieldRef(declaringClass, name, type, isStatic());
+  }
+
+  public boolean isValidResolve(SootFieldRef f) {
+    return (this.isStatic() == f.isStatic()) && Objects.equals(this.getDeclaringClass(), f.declaringClass())
+        && Objects.equals(this.getName(), f.name()) && Objects.equals(this.getType(), f.type());
   }
 }

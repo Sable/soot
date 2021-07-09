@@ -28,19 +28,11 @@ import soot.UnitPrinter;
 import soot.jimple.StaticFieldRef;
 
 public class DStaticFieldRef extends StaticFieldRef {
-  private boolean supressDeclaringClass;
 
-  public void toString(UnitPrinter up) {
-    if (!supressDeclaringClass) {
-      up.type(fieldRef.declaringClass().getType());
-      up.literal(".");
-    }
-    up.fieldRef(fieldRef);
-  }
+  private final boolean supressDeclaringClass;
 
   public DStaticFieldRef(SootFieldRef fieldRef, String myClassName) {
-    super(fieldRef);
-    supressDeclaringClass = myClassName.equals(fieldRef.declaringClass().getName());
+    this(fieldRef, myClassName.equals(fieldRef.declaringClass().getName()));
   }
 
   public DStaticFieldRef(SootFieldRef fieldRef, boolean supressDeclaringClass) {
@@ -48,7 +40,18 @@ public class DStaticFieldRef extends StaticFieldRef {
     this.supressDeclaringClass = supressDeclaringClass;
   }
 
+  @Override
   public Object clone() {
-    return new DStaticFieldRef(fieldRef, supressDeclaringClass);
+    return new DStaticFieldRef(getFieldRef(), supressDeclaringClass);
+  }
+
+  @Override
+  public void toString(UnitPrinter up) {
+    SootFieldRef fRef = getFieldRef();
+    if (!supressDeclaringClass) {
+      up.type(fRef.declaringClass().getType());
+      up.literal(".");
+    }
+    up.fieldRef(fRef);
   }
 }

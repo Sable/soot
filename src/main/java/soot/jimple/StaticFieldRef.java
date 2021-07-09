@@ -46,26 +46,32 @@ public class StaticFieldRef implements FieldRef, ConvertToBaf {
     this.fieldRef = fieldRef;
   }
 
+  @Override
   public Object clone() {
     return new StaticFieldRef(fieldRef);
   }
 
+  @Override
   public String toString() {
     return fieldRef.getSignature();
   }
 
+  @Override
   public void toString(UnitPrinter up) {
     up.fieldRef(fieldRef);
   }
 
+  @Override
   public SootFieldRef getFieldRef() {
     return fieldRef;
   }
 
+  @Override
   public void setFieldRef(SootFieldRef fieldRef) {
     this.fieldRef = fieldRef;
   }
 
+  @Override
   public SootField getField() {
     return fieldRef.resolve();
   }
@@ -75,26 +81,31 @@ public class StaticFieldRef implements FieldRef, ConvertToBaf {
     return Collections.emptyList();
   }
 
+  @Override
   public Type getType() {
     return fieldRef.type();
   }
 
+  @Override
   public void apply(Switch sw) {
     ((RefSwitch) sw).caseStaticFieldRef(this);
   }
 
+  @Override
   public boolean equivTo(Object o) {
     if (o instanceof StaticFieldRef) {
       return ((StaticFieldRef) o).getField().equals(getField());
+    } else {
+      return false;
     }
-
-    return false;
   }
 
+  @Override
   public int equivHashCode() {
     return getField().equivHashCode();
   }
 
+  @Override
   public void convertToBaf(JimpleToBafContext context, List<Unit> out) {
     Unit u = Baf.v().newStaticGetInst(fieldRef);
     u.addAllTagsOf(context.getCurrentUnit());

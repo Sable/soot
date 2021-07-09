@@ -34,15 +34,17 @@ import soot.options.Options;
  * actually exist; the actual target of the reference is determined according to the resolution procedure in the Java Virtual
  * Machine Specification, 2nd ed, section 5.4.3.2.
  */
-
 public class AbstractSootFieldRef implements SootFieldRef {
   private static final Logger logger = LoggerFactory.getLogger(AbstractSootFieldRef.class);
 
+  private final SootClass declaringClass;
+  private final String name;
+  private final Type type;
+  private final boolean isStatic;
+
+  private SootField resolveCache = null;
+
   public AbstractSootFieldRef(SootClass declaringClass, String name, Type type, boolean isStatic) {
-    this.declaringClass = declaringClass;
-    this.name = name;
-    this.type = type;
-    this.isStatic = isStatic;
     if (declaringClass == null) {
       throw new RuntimeException("Attempt to create SootFieldRef with null class");
     }
@@ -52,12 +54,11 @@ public class AbstractSootFieldRef implements SootFieldRef {
     if (type == null) {
       throw new RuntimeException("Attempt to create SootFieldRef with null type");
     }
+    this.declaringClass = declaringClass;
+    this.name = name;
+    this.type = type;
+    this.isStatic = isStatic;
   }
-
-  private final SootClass declaringClass;
-  private final String name;
-  private final Type type;
-  private final boolean isStatic;
 
   @Override
   public SootClass declaringClass() {
@@ -85,9 +86,6 @@ public class AbstractSootFieldRef implements SootFieldRef {
   }
 
   public class FieldResolutionFailedException extends ResolutionFailedException {
-    /**
-     *
-     */
     private static final long serialVersionUID = -4657113720516199499L;
 
     public FieldResolutionFailedException() {
@@ -97,8 +95,7 @@ public class AbstractSootFieldRef implements SootFieldRef {
 
     @Override
     public String toString() {
-      StringBuffer ret = new StringBuffer();
-      ret.append(super.toString());
+      StringBuilder ret = new StringBuilder(super.toString());
       resolve(ret);
       return ret.toString();
     }
@@ -106,33 +103,38 @@ public class AbstractSootFieldRef implements SootFieldRef {
 
   @Override
   public SootField resolve() {
-    return resolve(null);
+    SootField cached = this.resolveCache;
+    // Use the cached SootField if available and still valid
+    if (cached == null || !cached.isValidResolve(this)) {
+      cached = resolve(null);
+      this.resolveCache = cached;
+    }
+    return cached;
   }
 
   private SootField checkStatic(SootField ret) {
     if ((Options.v().wrong_staticness() == Options.wrong_staticness_fail
-          || Options.v().wrong_staticness() == Options.wrong_staticness_fixstrict)
-          && ret.isStatic() != isStatic() && !ret.isPhantom()) {
+        || Options.v().wrong_staticness() == Options.wrong_staticness_fixstrict) && ret.isStatic() != isStatic()
+        && !ret.isPhantom()) {
       throw new ResolutionFailedException("Resolved " + this + " to " + ret + " which has wrong static-ness");
     }
     return ret;
   }
 
-  private SootField resolve(StringBuffer trace) {
+  private SootField resolve(StringBuilder trace) {
     SootClass cl = declaringClass;
     while (true) {
       if (trace != null) {
-        trace.append("Looking in " + cl + " which has fields " + cl.getFields() + "\n");
+        trace.append("Looking in ").append(cl).append(" which has fields ").append(cl.getFields()).append('\n');
       }
 
       // Check whether we have the field in the current class
       SootField clField = cl.getFieldUnsafe(name, type);
       if (clField != null) {
         return checkStatic(clField);
-      }
-      // If we have a phantom class, we directly construct a phantom field
-      // in it and don't care about superclasses.
-      else if (Scene.v().allowsPhantomRefs() && cl.isPhantom()) {
+      } else if (Scene.v().allowsPhantomRefs() && cl.isPhantom()) {
+        // If we have a phantom class, we directly construct a phantom field
+        // in it and don't care about superclasses.
         synchronized (cl) {
           // Check that no other thread has created the field in the
           // meantime
@@ -164,7 +166,7 @@ public class AbstractSootFieldRef implements SootFieldRef {
           }
 
           if (trace != null) {
-            trace.append("Looking in " + iface + " which has fields " + iface.getFields() + "\n");
+            trace.append("Looking in ").append(iface).append(" which has fields ").append(iface.getFields()).append('\n');
           }
           SootField ifaceField = iface.getFieldUnsafe(name, type);
           if (ifaceField != null) {
@@ -208,7 +210,7 @@ public class AbstractSootFieldRef implements SootFieldRef {
     if (trace == null) {
       FieldResolutionFailedException e = new FieldResolutionFailedException();
       if (Options.v().ignore_resolution_errors()) {
-        logger.debug("" + e.getMessage());
+        logger.debug(e.getMessage());
       } else {
         throw e;
       }
@@ -250,38 +252,34 @@ public class AbstractSootFieldRef implements SootFieldRef {
     if (this == obj) {
       return true;
     }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
+    if (obj == null || this.getClass() != obj.getClass()) {
       return false;
     }
     AbstractSootFieldRef other = (AbstractSootFieldRef) obj;
-    if (declaringClass == null) {
+    if (this.isStatic != other.isStatic) {
+      return false;
+    }
+    if (this.declaringClass == null) {
       if (other.declaringClass != null) {
         return false;
       }
-    } else if (!declaringClass.equals(other.declaringClass)) {
+    } else if (!this.declaringClass.equals(other.declaringClass)) {
       return false;
     }
-    if (isStatic != other.isStatic) {
-      return false;
-    }
-    if (name == null) {
+    if (this.name == null) {
       if (other.name != null) {
         return false;
       }
-    } else if (!name.equals(other.name)) {
+    } else if (!this.name.equals(other.name)) {
       return false;
     }
-    if (type == null) {
+    if (this.type == null) {
       if (other.type != null) {
         return false;
       }
-    } else if (!type.equals(other.type)) {
+    } else if (!this.type.equals(other.type)) {
       return false;
     }
     return true;
   }
-
 }
