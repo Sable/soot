@@ -648,12 +648,12 @@ public class AntTask extends MatchingTask {
             if(arg) addArg("-annot-purity");
         }
   
-        public void setannot_nullpointer(boolean arg) {
-            if(arg) addArg("-annot-nullpointer");
-        }
-  
         public void setannot_arraybounds(boolean arg) {
             if(arg) addArg("-annot-arraybounds");
+        }
+  
+        public void setannot_nullpointer(boolean arg) {
+            if(arg) addArg("-annot-nullpointer");
         }
   
         public void setannot_side_effect(boolean arg) {
@@ -2371,6 +2371,69 @@ public class AntTask extends MatchingTask {
       
         }
     
+        public Object createp_wjap_abc() {
+            Object ret = new PhaseOptwjap_abc();
+            phaseopts.add(ret);
+            return ret;
+        }
+        public class PhaseOptwjap_abc {
+      
+          public void setenabled(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("enabled:"+(arg?"true":"false"));
+          }
+      
+          public void setwith_all(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("with-all:"+(arg?"true":"false"));
+          }
+      
+          public void setwith_cse(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("with-cse:"+(arg?"true":"false"));
+          }
+      
+          public void setwith_arrayref(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("with-arrayref:"+(arg?"true":"false"));
+          }
+      
+          public void setwith_fieldref(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("with-fieldref:"+(arg?"true":"false"));
+          }
+      
+          public void setwith_classfield(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("with-classfield:"+(arg?"true":"false"));
+          }
+      
+          public void setwith_rectarray(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("with-rectarray:"+(arg?"true":"false"));
+          }
+      
+          public void setprofiling(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("profiling:"+(arg?"true":"false"));
+          }
+      
+          public void setadd_color_tags(boolean arg) {
+            addArg("-p");
+            addArg("wjap.abc");
+            addArg("add-color-tags:"+(arg?"true":"false"));
+          }
+      
+        }
+    
         public Object createp_shimple() {
             Object ret = new PhaseOptshimple();
             phaseopts.add(ret);
@@ -2805,69 +2868,6 @@ public class AntTask extends MatchingTask {
             addArg("-p");
             addArg("jap.npcolorer");
             addArg("enabled:"+(arg?"true":"false"));
-          }
-      
-        }
-    
-        public Object createp_jap_abc() {
-            Object ret = new PhaseOptjap_abc();
-            phaseopts.add(ret);
-            return ret;
-        }
-        public class PhaseOptjap_abc {
-      
-          public void setenabled(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("enabled:"+(arg?"true":"false"));
-          }
-      
-          public void setwith_all(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("with-all:"+(arg?"true":"false"));
-          }
-      
-          public void setwith_cse(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("with-cse:"+(arg?"true":"false"));
-          }
-      
-          public void setwith_arrayref(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("with-arrayref:"+(arg?"true":"false"));
-          }
-      
-          public void setwith_fieldref(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("with-fieldref:"+(arg?"true":"false"));
-          }
-      
-          public void setwith_classfield(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("with-classfield:"+(arg?"true":"false"));
-          }
-      
-          public void setwith_rectarray(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("with-rectarray:"+(arg?"true":"false"));
-          }
-      
-          public void setprofiling(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("profiling:"+(arg?"true":"false"));
-          }
-      
-          public void setadd_color_tags(boolean arg) {
-            addArg("-p");
-            addArg("jap.abc");
-            addArg("add-color-tags:"+(arg?"true":"false"));
           }
       
         }

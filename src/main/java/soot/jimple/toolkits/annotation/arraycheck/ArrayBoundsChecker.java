@@ -31,10 +31,10 @@ import org.slf4j.LoggerFactory;
 
 import soot.ArrayType;
 import soot.Body;
-import soot.BodyTransformer;
 import soot.G;
 import soot.Local;
 import soot.Scene;
+import soot.SceneTransformer;
 import soot.Singletons;
 import soot.SootClass;
 import soot.SootMethod;
@@ -53,10 +53,17 @@ import soot.tagkit.KeyTag;
 import soot.tagkit.Tag;
 import soot.util.Chain;
 
-public class ArrayBoundsChecker extends BodyTransformer {
+public class ArrayBoundsChecker extends SceneTransformer {
   private static final Logger logger = LoggerFactory.getLogger(ArrayBoundsChecker.class);
 
   public ArrayBoundsChecker(Singletons.Global g) {
+  }
+
+  @Override
+  protected void internalTransform(String phaseName, Map<String, String> options) {
+    Scene.v().getReachableMethods().listener().forEachRemaining(method -> {
+      internalTransform(method.method().getActiveBody(), options);
+    });
   }
 
   public static ArrayBoundsChecker v() {
@@ -70,7 +77,7 @@ public class ArrayBoundsChecker extends BodyTransformer {
   protected boolean takeRectArray = false;
   protected boolean addColorTags = false;
 
-  protected void internalTransform(Body body, String phaseName, Map opts) {
+  protected void internalTransform(Body body, Map opts) {
     ABCOptions options = new ABCOptions(opts);
     if (options.with_all()) {
       takeClassField = true;

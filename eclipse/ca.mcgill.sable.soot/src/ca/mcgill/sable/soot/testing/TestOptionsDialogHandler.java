@@ -1483,7 +1483,103 @@ public class TestOptionsDialogHandler {
 			cmd.append(COLON);
 			cmd.append(path);
 			cmd.append(SPACE);
-		}	
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"disabled";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = true;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"with-all";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = false;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"with-fieldref";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = false;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"with-arrayref";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = false;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"with-cse";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = false;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"with-classfield";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = false;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"with-rectarray";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = false;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
+
+		key = "p"+" "+"wjap.abc"+" "+"profiling";
+		value = settings.getBoolean(key.trim());
+
+		boolDefault = false;
+
+
+		if (value != boolDefault ) {
+			cmd.append(DASH);
+			cmd.append(key.trim());
+			cmd.append(SPACE);
+		}
 		
 		key = "p"+" "+"wjtp2"+" "+"disabled";
 		value = settings.getBoolean(key.trim());
@@ -1836,102 +1932,6 @@ public class TestOptionsDialogHandler {
 		}
 		
 		key = "p"+" "+"jap.npc"+" "+"profiling";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = false;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"disabled";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = true;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"with-all";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = false;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"with-fieldref";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = false;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"with-arrayref";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = false;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"with-cse";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = false;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"with-classfield";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = false;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"with-rectarray";
-		value = settings.getBoolean(key.trim());
-		
-		boolDefault = false;
-		
-		
-		if (value != boolDefault ) {
-			cmd.append(DASH);
-			cmd.append(key.trim());
-			cmd.append(SPACE);
-		}
-		
-		key = "p"+" "+"jap.abc"+" "+"profiling";
 		value = settings.getBoolean(key.trim());
 		
 		boolDefault = false;

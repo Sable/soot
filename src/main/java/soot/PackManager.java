@@ -266,6 +266,7 @@ public class PackManager {
       p.add(new Transform("wjap.tqt", TightestQualifiersTagger.v()));
       p.add(new Transform("wjap.cgg", CallGraphGrapher.v()));
       p.add(new Transform("wjap.purity", PurityAnalysis.v())); // [AM]
+      p.add(new Transform("wjap.abc", ArrayBoundsChecker.v()));
     }
 
     // Shimple pack
@@ -306,7 +307,6 @@ public class PackManager {
     {
       p.add(new Transform("jap.npc", NullPointerChecker.v()));
       p.add(new Transform("jap.npcolorer", NullPointerColorer.v()));
-      p.add(new Transform("jap.abc", ArrayBoundsChecker.v()));
       p.add(new Transform("jap.profiling", ProfilingGenerator.v()));
       p.add(new Transform("jap.sea", SideEffectTagger.v()));
       p.add(new Transform("jap.fieldrw", FieldTagger.v()));

@@ -5137,6 +5137,146 @@ This locking scheme aims to achieve simple fine-grained locking.
                         <default>false</default>
                     </boolopt>
                 </sub_phase>
+                <sub_phase>
+                    <name>Array Bound Checker</name>
+                    <class>ABCOptions</class>
+                    <alias>wjap.abc</alias>
+                    <short_desc>Array bound checker</short_desc>
+                    <long_desc>
+                        <p>
+                            The Array Bound Checker performs a static analysis to determine
+                            which array bounds checks may safely be eliminated and then annotates
+                            statements with the results of the analysis.
+                        </p>
+                        <p>
+                            If Soot is in whole-program mode, the Array Bound Checker can
+                            use the results provided by the Rectangular Array Finder.
+                        </p>
+                    </long_desc>
+                    <boolopt>
+                        <name>Enabled</name>
+                        <alias>enabled</alias>
+                        <default>false</default>
+                        <short_desc/>
+                        <long_desc/>
+                    </boolopt>
+                    <boolopt>
+                        <name>With All</name>
+                        <alias>with-all</alias>
+                        <default>false</default>
+                        <short_desc/>
+                        <long_desc>
+                            <p>
+                                Setting the With All option to true is equivalent to setting each
+                                of With CSE, With Array Ref, With Field Ref,
+                                With Class Field, and With Rectangular Array to true.
+                            </p>
+                        </long_desc>
+                    </boolopt>
+                    <boolopt>
+                        <name>With Common Sub-expressions</name>
+                        <alias>with-cse</alias>
+                        <default>false</default>
+                        <short_desc/>
+                        <long_desc>
+                            <p>
+                                The analysis will consider common subexpressions. For example,
+                                consider the situation where <tt>r1</tt> is assigned
+                                <tt>a*b</tt>; later, <tt>r2</tt> is assigned <tt>a*b</tt>, where
+                                neither <tt>a</tt> nor <tt>b</tt> have changed between the two
+                                statements. The analysis can conclude that <tt>r2</tt> has the
+                                same value as <tt>r1</tt>. Experiments show that this option can
+                                improve the result slightly.
+                            </p>
+                        </long_desc>
+                    </boolopt>
+                    <boolopt>
+                        <name>With Array References</name>
+                        <alias>with-arrayref</alias>
+                        <default>false</default>
+                        <short_desc/>
+                        <long_desc>
+                            <p>
+                                With this option enabled, array references can be considered as
+                                common subexpressions; however, we are more conservative when
+                                writing into an array, because array objects may be aliased. We
+                                also assume that the application is single-threaded or that the
+                                array references occur in a synchronized block. That is, we
+                                assume that an array element may not be changed by other threads
+                                between two array references.
+                            </p>
+                        </long_desc>
+                    </boolopt>
+                    <boolopt>
+                        <name>With Field References</name>
+                        <alias>with-fieldref</alias>
+                        <default>false</default>
+                        <short_desc/>
+                        <long_desc>
+                            <p>
+                                The analysis treats field references (static and instance) as
+                                common subexpressions; however, we are more conservative when
+                                writing to a field, because the base of the field reference may
+                                be aliased. We also assume that the application is
+                                single-threaded or that the field references occur in a
+                                synchronized block. That is, we assume that a field may
+                                not be changed by other threads between two field references.
+                            </p>
+                        </long_desc>
+                    </boolopt>
+                    <boolopt>
+                        <name>With Class Field</name>
+                        <alias>with-classfield</alias>
+                        <default>false</default>
+                        <short_desc/>
+                        <long_desc>
+                            <p>
+                                This option makes the analysis work on the class level. The
+                                algorithm analyzes <tt>final</tt> or <tt>private</tt> class
+                                fields first. It can recognize the fields that hold array objects
+                                of constant length. In an application using lots of array
+                                fields, this option can improve the analysis results
+                                dramatically.
+                            </p>
+                        </long_desc>
+                    </boolopt>
+                    <boolopt>
+                        <name>With Rectangular Array</name>
+                        <alias>with-rectarray</alias>
+                        <default>false</default>
+                        <short_desc/>
+                        <long_desc>
+                            This option is used together with <tt>wjap.ra</tt> to make Soot run the whole-program
+                            analysis for rectangular array objects. This analysis is based on the
+                            call graph, and it usually takes a long time. If the application uses
+                            rectangular arrays, these options can improve the analysis
+                            result.
+                        </long_desc>
+                    </boolopt>
+                    <boolopt>
+                        <name>Profiling</name>
+                        <alias>profiling</alias>
+                        <default>false</default>
+                        <short_desc>Profile the results of array bounds check analysis.</short_desc>
+                        <long_desc>
+                            <p>
+                                Profile the results of array bounds check analysis. The inserted
+                                profiling code assumes the existence of a
+                                <tt>MultiCounter</tt>
+                                class implementing the methods invoked. For details, see the
+                                <tt>ArrayBoundsChecker</tt>
+                                source code.
+                            </p>
+                        </long_desc>
+                    </boolopt>
+                    <boolopt>
+                        <name>Add Color Tags</name>
+                        <alias>add-color-tags</alias>
+                        <default>false</default>
+                        <short_desc>Add color tags to results of array bound check analysis.</short_desc>
+                        <long_desc>Add color tags to the results of the array bounds check analysis.</long_desc>
+                    </boolopt>
+                </sub_phase>
             </phase>
             <phase>
                 <name>Shimple Control</name>
@@ -5858,146 +5998,6 @@ This locking scheme aims to achieve simple fine-grained locking.
                         <alias>enabled</alias>
                         <default>false</default>
                         <long_desc></long_desc>
-                    </boolopt>
-                </sub_phase>
-                <sub_phase>
-                    <name>Array Bound Checker</name>
-                    <class>ABCOptions</class>
-                    <alias>jap.abc</alias>
-                    <short_desc>Array bound checker</short_desc>
-                    <long_desc>
-                        <p>
-                            The Array Bound Checker performs a static analysis to determine
-                            which array bounds checks may safely be eliminated and then annotates
-                            statements with the results of the analysis.
-                        </p>
-                        <p>
-                            If Soot is in whole-program mode, the Array Bound Checker can
-                            use the results provided by the Rectangular Array Finder.
-                        </p>
-                    </long_desc>
-                    <boolopt>
-                        <name>Enabled</name>
-                        <alias>enabled</alias>
-                        <default>false</default>
-                        <short_desc/>
-                        <long_desc/>
-                    </boolopt>
-                    <boolopt>
-                        <name>With All</name>
-                        <alias>with-all</alias>
-                        <default>false</default>
-                        <short_desc/>
-                        <long_desc>
-                            <p>
-                                Setting the With All option to true is equivalent to setting each
-                                of With CSE, With Array Ref, With Field Ref,
-                                With Class Field, and With Rectangular Array to true.
-                            </p>
-                        </long_desc>
-                    </boolopt>
-                    <boolopt>
-                        <name>With Common Sub-expressions</name>
-                        <alias>with-cse</alias>
-                        <default>false</default>
-                        <short_desc/>
-                        <long_desc>
-                            <p>
-                                The analysis will consider common subexpressions. For example,
-                                consider the situation where <tt>r1</tt> is assigned
-                                <tt>a*b</tt>; later, <tt>r2</tt> is assigned <tt>a*b</tt>, where
-                                neither <tt>a</tt> nor <tt>b</tt> have changed between the two
-                                statements. The analysis can conclude that <tt>r2</tt> has the
-                                same value as <tt>r1</tt>. Experiments show that this option can
-                                improve the result slightly.
-                            </p>
-                        </long_desc>
-                    </boolopt>
-                    <boolopt>
-                        <name>With Array References</name>
-                        <alias>with-arrayref</alias>
-                        <default>false</default>
-                        <short_desc/>
-                        <long_desc>
-                            <p>
-                                With this option enabled, array references can be considered as
-                                common subexpressions; however, we are more conservative when
-                                writing into an array, because array objects may be aliased. We
-                                also assume that the application is single-threaded or that the
-                                array references occur in a synchronized block. That is, we
-                                assume that an array element may not be changed by other threads
-                                between two array references.
-                            </p>
-                        </long_desc>
-                    </boolopt>
-                    <boolopt>
-                        <name>With Field References</name>
-                        <alias>with-fieldref</alias>
-                        <default>false</default>
-                        <short_desc/>
-                        <long_desc>
-                            <p>
-                                The analysis treats field references (static and instance) as
-                                common subexpressions; however, we are more conservative when
-                                writing to a field, because the base of the field reference may
-                                be aliased. We also assume that the application is
-                                single-threaded or that the field references occur in a
-                                synchronized block. That is, we assume that a field may
-                                not be changed by other threads between two field references.
-                            </p>
-                        </long_desc>
-                    </boolopt>
-                    <boolopt>
-                        <name>With Class Field</name>
-                        <alias>with-classfield</alias>
-                        <default>false</default>
-                        <short_desc/>
-                        <long_desc>
-                            <p>
-                                This option makes the analysis work on the class level. The
-                                algorithm analyzes <tt>final</tt> or <tt>private</tt> class
-                                fields first. It can recognize the fields that hold array objects
-                                of constant length. In an application using lots of array
-                                fields, this option can improve the analysis results
-                                dramatically.
-                            </p>
-                        </long_desc>
-                    </boolopt>
-                    <boolopt>
-                        <name>With Rectangular Array</name>
-                        <alias>with-rectarray</alias>
-                        <default>false</default>
-                        <short_desc/>
-                        <long_desc>
-                            This option is used together with <tt>wjap.ra</tt> to make Soot run the whole-program
-                            analysis for rectangular array objects. This analysis is based on the
-                            call graph, and it usually takes a long time. If the application uses
-                            rectangular arrays, these options can improve the analysis
-                            result.
-                        </long_desc>
-                    </boolopt>
-                    <boolopt>
-                        <name>Profiling</name>
-                        <alias>profiling</alias>
-                        <default>false</default>
-                        <short_desc>Profile the results of array bounds check analysis.</short_desc>
-                        <long_desc>
-                            <p>
-                                Profile the results of array bounds check analysis. The inserted
-                                profiling code assumes the existence of a
-                                <tt>MultiCounter</tt>
-                                class implementing the methods invoked. For details, see the
-                                <tt>ArrayBoundsChecker</tt>
-                                source code.
-                            </p>
-                        </long_desc>
-                    </boolopt>
-                    <boolopt>
-                        <name>Add Color Tags</name>
-                        <alias>add-color-tags</alias>
-                        <default>false</default>
-                        <short_desc>Add color tags to results of array bound check analysis.</short_desc>
-                        <long_desc>Add color tags to the results of the array bounds check analysis.</long_desc>
                     </boolopt>
                 </sub_phase>
                 <sub_phase>
@@ -7402,6 +7402,27 @@ This locking scheme aims to achieve simple fine-grained locking.
             </long_desc>
         </macroopt>
         <macroopt>
+            <name>Array Bounds Annotation</name>
+            <alias>annot-arraybounds</alias>
+            <expansion>-p</expansion>
+            <expansion>wjap.ra</expansion>
+            <expansion>enabled:true</expansion>
+            <expansion>-p</expansion>
+            <expansion>wjap.abc</expansion>
+            <expansion>enabled:true</expansion>
+            <expansion>-p</expansion>
+            <expansion>tag.an</expansion>
+            <expansion>enabled:true</expansion>
+            <short_desc>Emit array bounds check attributes</short_desc>
+            <long_desc>
+                Perform a static analysis of which array bounds checks may safely
+                be eliminated and annotate output class files with attributes
+                encoding the results of the analysis. For details, see the
+                documentation for Array Bounds Annotation and for the Array
+                Bounds and Null Pointer Check Tag Aggregator.
+            </long_desc>
+        </macroopt>
+        <macroopt>
             <name>Null Pointer Annotation</name>
             <alias>annot-nullpointer</alias>
             <expansion>-p</expansion>
@@ -7417,27 +7438,6 @@ This locking scheme aims to achieve simple fine-grained locking.
                 encoding the results of the analysis. For details, see the
                 documentation for Null Pointer Annotation and for the
                 Array Bounds and Null Pointer Check Tag Aggregator.
-            </long_desc>
-        </macroopt>
-        <macroopt>
-            <name>Array Bounds Annotation</name>
-            <alias>annot-arraybounds</alias>
-            <expansion>-p</expansion>
-            <expansion>wjap.ra</expansion>
-            <expansion>enabled:true</expansion>
-            <expansion>-p</expansion>
-            <expansion>jap.abc</expansion>
-            <expansion>enabled:true</expansion>
-            <expansion>-p</expansion>
-            <expansion>tag.an</expansion>
-            <expansion>enabled:true</expansion>
-            <short_desc>Emit array bounds check attributes</short_desc>
-            <long_desc>
-                Perform a static analysis of which array bounds checks may safely
-                be eliminated and annotate output class files with attributes
-                encoding the results of the analysis. For details, see the
-                documentation for Array Bounds Annotation and for the Array
-                Bounds and Null Pointer Check Tag Aggregator.
             </long_desc>
         </macroopt>
         <macroopt>

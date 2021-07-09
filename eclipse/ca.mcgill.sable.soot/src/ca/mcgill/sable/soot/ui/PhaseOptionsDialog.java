@@ -643,6 +643,26 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 		getwjapwjap_purityannotate_widget().getButton().addSelectionListener(this);
 		getwjapwjap_purityverbose_widget().getButton().addSelectionListener(this);
 
+		makeNewEnableGroup("wjap", "wjap.abc");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcenabled_widget(), "enabled");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcwith_all_widget(), "with-all");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcwith_cse_widget(), "with-cse");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcwith_arrayref_widget(), "with-arrayref");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcwith_fieldref_widget(), "with-fieldref");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcwith_classfield_widget(), "with-classfield");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcwith_rectarray_widget(), "with-rectarray");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcprofiling_widget(), "profiling");
+		addToEnableGroup("wjap", "wjap.abc", getjapjap_abcadd_color_tags_widget(), "add-color-tags");
+		getjapjap_abcenabled_widget().getButton().addSelectionListener(this);
+		getjapjap_abcwith_all_widget().getButton().addSelectionListener(this);
+		getjapjap_abcwith_cse_widget().getButton().addSelectionListener(this);
+		getjapjap_abcwith_arrayref_widget().getButton().addSelectionListener(this);
+		getjapjap_abcwith_fieldref_widget().getButton().addSelectionListener(this);
+		getjapjap_abcwith_classfield_widget().getButton().addSelectionListener(this);
+		getjapjap_abcwith_rectarray_widget().getButton().addSelectionListener(this);
+		getjapjap_abcprofiling_widget().getButton().addSelectionListener(this);
+		getjapjap_abcadd_color_tags_widget().getButton().addSelectionListener(this);
+
 		makeNewEnableGroup("shimple");
 		addToEnableGroup("shimple", getshimpleenabled_widget(), "enabled");
 		addToEnableGroup("shimple", getshimplenode_elim_opt_widget(), "node-elim-opt");
@@ -765,26 +785,6 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 		makeNewEnableGroup("jap", "jap.npcolorer");
 		addToEnableGroup("jap", "jap.npcolorer", getjapjap_npcolorerenabled_widget(), "enabled");
 		getjapjap_npcolorerenabled_widget().getButton().addSelectionListener(this);
-
-		makeNewEnableGroup("jap", "jap.abc");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcenabled_widget(), "enabled");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcwith_all_widget(), "with-all");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcwith_cse_widget(), "with-cse");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcwith_arrayref_widget(), "with-arrayref");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcwith_fieldref_widget(), "with-fieldref");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcwith_classfield_widget(), "with-classfield");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcwith_rectarray_widget(), "with-rectarray");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcprofiling_widget(), "profiling");
-		addToEnableGroup("jap", "jap.abc", getjapjap_abcadd_color_tags_widget(), "add-color-tags");
-		getjapjap_abcenabled_widget().getButton().addSelectionListener(this);
-		getjapjap_abcwith_all_widget().getButton().addSelectionListener(this);
-		getjapjap_abcwith_cse_widget().getButton().addSelectionListener(this);
-		getjapjap_abcwith_arrayref_widget().getButton().addSelectionListener(this);
-		getjapjap_abcwith_fieldref_widget().getButton().addSelectionListener(this);
-		getjapjap_abcwith_classfield_widget().getButton().addSelectionListener(this);
-		getjapjap_abcwith_rectarray_widget().getButton().addSelectionListener(this);
-		getjapjap_abcprofiling_widget().getButton().addSelectionListener(this);
-		getjapjap_abcadd_color_tags_widget().getButton().addSelectionListener(this);
 
 		makeNewEnableGroup("jap", "jap.profiling");
 		addToEnableGroup("jap", "jap.profiling", getjapjap_profilingenabled_widget(), "enabled");
@@ -15497,7 +15497,7 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 		
 		
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"enabled";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"enabled";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15506,9 +15506,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcenabled_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("Enabled", "p phase-option", "jap.abc","enabled", "\n", defaultBool)));
+		setjapjap_abcenabled_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("Enabled", "p phase-option", "wjap.abc","enabled", "\n", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"with-all";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"with-all";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15517,9 +15517,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcwith_all_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With All", "p phase-option", "jap.abc","with-all", "\nSetting the With All option to true is equivalent to setting \neach of With CSE, With Array Ref, With Field Ref, With Class \nField, and With Rectangular Array to true.", defaultBool)));
+		setjapjap_abcwith_all_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With All", "p phase-option", "wjap.abc","with-all", "\nSetting the With All option to true is equivalent to setting \neach of With CSE, With Array Ref, With Field Ref, With Class \nField, and With Rectangular Array to true.", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"with-cse";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"with-cse";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15528,9 +15528,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcwith_cse_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Common Sub-expressions", "p phase-option", "jap.abc","with-cse", "\nThe analysis will consider common subexpressions. For example, \nconsider the situation where r1 is assigned a*b; later, r2 is \nassigned a*b, where neither a nor b have changed between the two \nstatements. The analysis can conclude that r2 has the same value \nas r1. Experiments show that this option can improve the result \nslightly.", defaultBool)));
+		setjapjap_abcwith_cse_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Common Sub-expressions", "p phase-option", "wjap.abc","with-cse", "\nThe analysis will consider common subexpressions. For example, \nconsider the situation where r1 is assigned a*b; later, r2 is \nassigned a*b, where neither a nor b have changed between the two \nstatements. The analysis can conclude that r2 has the same value \nas r1. Experiments show that this option can improve the result \nslightly.", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"with-arrayref";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"with-arrayref";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15539,9 +15539,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcwith_arrayref_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Array References", "p phase-option", "jap.abc","with-arrayref", "\nWith this option enabled, array references can be considered as \ncommon subexpressions; however, we are more conservative when \nwriting into an array, because array objects may be aliased. We \nalso assume that the application is single-threaded or that the \narray references occur in a synchronized block. That is, we \nassume that an array element may not be changed by other threads \nbetween two array references.", defaultBool)));
+		setjapjap_abcwith_arrayref_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Array References", "p phase-option", "wjap.abc","with-arrayref", "\nWith this option enabled, array references can be considered as \ncommon subexpressions; however, we are more conservative when \nwriting into an array, because array objects may be aliased. We \nalso assume that the application is single-threaded or that the \narray references occur in a synchronized block. That is, we \nassume that an array element may not be changed by other threads \nbetween two array references.", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"with-fieldref";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"with-fieldref";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15550,9 +15550,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcwith_fieldref_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Field References", "p phase-option", "jap.abc","with-fieldref", "\nThe analysis treats field references (static and instance) as \ncommon subexpressions; however, we are more conservative when \nwriting to a field, because the base of the field reference may \nbe aliased. We also assume that the application is \nsingle-threaded or that the field references occur in a \nsynchronized block. That is, we assume that a field may not be \nchanged by other threads between two field references.", defaultBool)));
+		setjapjap_abcwith_fieldref_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Field References", "p phase-option", "wjap.abc","with-fieldref", "\nThe analysis treats field references (static and instance) as \ncommon subexpressions; however, we are more conservative when \nwriting to a field, because the base of the field reference may \nbe aliased. We also assume that the application is \nsingle-threaded or that the field references occur in a \nsynchronized block. That is, we assume that a field may not be \nchanged by other threads between two field references.", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"with-classfield";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"with-classfield";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15561,9 +15561,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcwith_classfield_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Class Field", "p phase-option", "jap.abc","with-classfield", "\nThis option makes the analysis work on the class level. The \nalgorithm analyzes final or private class fields first. It can \nrecognize the fields that hold array objects of constant length. \nIn an application using lots of array fields, this option can \nimprove the analysis results dramatically.", defaultBool)));
+		setjapjap_abcwith_classfield_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Class Field", "p phase-option", "wjap.abc","with-classfield", "\nThis option makes the analysis work on the class level. The \nalgorithm analyzes final or private class fields first. It can \nrecognize the fields that hold array objects of constant length. \nIn an application using lots of array fields, this option can \nimprove the analysis results dramatically.", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"with-rectarray";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"with-rectarray";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15572,9 +15572,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcwith_rectarray_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Rectangular Array", "p phase-option", "jap.abc","with-rectarray", "\nThis option is used together with wjap.ra to make Soot run the \nwhole-program analysis for rectangular array objects. This \nanalysis is based on the call graph, and it usually takes a long \ntime. If the application uses rectangular arrays, these options \ncan improve the analysis result.", defaultBool)));
+		setjapjap_abcwith_rectarray_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("With Rectangular Array", "p phase-option", "wjap.abc","with-rectarray", "\nThis option is used together with wjap.ra to make Soot run the \nwhole-program analysis for rectangular array objects. This \nanalysis is based on the call graph, and it usually takes a long \ntime. If the application uses rectangular arrays, these options \ncan improve the analysis result.", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"profiling";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"profiling";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15583,9 +15583,9 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcprofiling_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("Profiling", "p phase-option", "jap.abc","profiling", "\nProfile the results of array bounds check analysis. The inserted \nprofiling code assumes the existence of a MultiCounter class \nimplementing the methods invoked. For details, see the \nArrayBoundsChecker source code.", defaultBool)));
+		setjapjap_abcprofiling_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("Profiling", "p phase-option", "wjap.abc","profiling", "\nProfile the results of array bounds check analysis. The inserted \nprofiling code assumes the existence of a MultiCounter class \nimplementing the methods invoked. For details, see the \nArrayBoundsChecker source code.", defaultBool)));
 
-		defKey = "p phase-option"+" "+"jap.abc"+" "+"add-color-tags";
+		defKey = "p phase-option"+" "+"wjap.abc"+" "+"add-color-tags";
 		defKey = defKey.trim();
 
 		if (isInDefList(defKey)) {
@@ -15594,7 +15594,7 @@ public class PhaseOptionsDialog extends AbstractOptionsDialog implements Selecti
 			defaultBool = false;
 		}
 
-		setjapjap_abcadd_color_tags_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("Add Color Tags", "p phase-option", "jap.abc","add-color-tags", "\nAdd color tags to the results of the array bounds check \nanalysis.", defaultBool)));
+		setjapjap_abcadd_color_tags_widget(new BooleanOptionWidget(editGroupjapjap_abc, SWT.NONE, new OptionData("Add Color Tags", "p phase-option", "wjap.abc","add-color-tags", "\nAdd color tags to the results of the array bounds check \nanalysis.", defaultBool)));
 
 
 		return editGroupjapjap_abc;

@@ -75,7 +75,7 @@ jap.npc}''. It has one phase option (aside from the default option
 Soot also has phase options for the array bounds check analysis.
 These options affect three levels of analyses: intraprocedural,
 class-level, and whole-program. The array bounds check analysis has
-the phase name ``{\em jap.abc}''.  If the whole-program analysis is
+the phase name ``{\em wjap.abc}''.  If the whole-program analysis is
 required, an extra phase ``{\em wjap.ra}'' for finding rectangular
 arrays is required.  This phase can be also enabled with
 phase options.
@@ -88,7 +88,7 @@ options assume that the application is single-threaded.
   
 \begin{description}
 
-\item[-p jap.abc with-cse]\ \\ 
+\item[-p wjap.abc with-cse]\ \\
 The analysis will consider common subexpressions.  For example,
   consider the situation where {\tt r1} is assigned {\tt a*b}; later,
   {\tt r2} is assigned {\tt a*b}, where both {\tt a} and {\tt b} have
@@ -96,7 +96,7 @@ The analysis will consider common subexpressions.  For example,
   conclude that {\tt r2} has the same value as {\tt r1}. Experiments
   show that this option can improve the result slightly.
 
-\item[-p jap.abc with-arrayref]\ \\ With this option enabled, array
+\item[-p wjap.abc with-arrayref]\ \\ With this option enabled, array
 references can be considered as common subexpressions; however, we are
 more conservative when writing into an array, because array
 objects may be aliased. NOTE: We also assume that the application in a
@@ -105,23 +105,23 @@ array element may not be changed by other threads between two array
 references.
 % see my thesis for an example of what to do when you have contention! -plam
 
-\item[-p jap.abc with-fieldref]\ \\ 
+\item[-p wjap.abc with-fieldref]\ \\
 The analysis treats field references (static and instance) as common
 subexpressions. The restrictions from the `{\tt with-arrayref}' option also
 apply. 
 
-\item[-p jap.abc with-classfield]\ \\ 
+\item[-p wjap.abc with-classfield]\ \\
 This option makes the analysis work on the class level. The algorithm 
 analyzes `final' or `private' class fields first. It can recognize
 the fields that hold array objects with constant length.  In an application 
 using lots of array fields, this option can improve the analysis results 
 dramatically. 
 
-\item[-p jap.abc with-all]\ \\
+\item[-p wjap.abc with-all]\ \\
 A macro.  Instead of typing a long string of phase options, this option 
-will turn on all options of the phase ``{\em jap.abc}''.
+will turn on all options of the phase ``{\em wjap.abc}''.
  
-\item[-p jap.abc with-rectarray, -p wjap.ra with-wholeapp]\ \\ These
+\item[-p wjap.abc with-rectarray, -p wjap.ra with-wholeapp]\ \\ These
 two options are used together to make Soot run the whole-program
 analysis for rectangular array objects. This analysis is based on the
 call graph, and it usually takes a long time. If the application uses
@@ -141,7 +141,7 @@ The options for rectangular array should be used in application
 mode. For example:
 \begin{verbatim}
     java soot.Main --app -annot-arraybounds -annot-arraybounds -p wjap.ra with-wholeapp 
-      -p jap.abc with-all spec.benchmarks._222_mpegaudio.Main
+      -p wjap.abc with-all spec.benchmarks._222_mpegaudio.Main
 \end{verbatim}
 
 The following command only annotates the array reference bytecodes.
