@@ -30,11 +30,11 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.RandomAccess;
-import java.util.Set;
 
 import soot.baf.GotoInst;
 import soot.jimple.GotoStmt;
@@ -129,59 +129,53 @@ public abstract class FlowAnalysis<N, A> extends AbstractFlowAnalysis<N, A> {
       // out of universe node
       Entry<D, F> superEntry = new Entry<D, F>(null, null);
 
-      List<D> entries = null;
-      List<D> actualEntries = gv.getEntries(g);
-
-      if (!actualEntries.isEmpty()) {
-        // normal cases: there is at least
-        // one return statement for a backward analysis
-        // or one entry statement for a forward analysis
-        entries = actualEntries;
-      } else {
-        // cases without any entry statement
-
+      List<D> entries;
+      {
+        List<D> actualEntries = gv.getEntries(g);
         if (isForward) {
-          // case of a forward flow analysis on
-          // a method without any entry point
-          throw new RuntimeException("error: no entry point for method in forward analysis");
+          if (!actualEntries.isEmpty()) {
+            // normal case: there is at least one entry statement
+            entries = actualEntries;
+          } else {
+            // error case: forward flow analysis on a method without any entry point
+            throw new RuntimeException("error: forward analysis on an empty entry set.");
+          }
         } else {
-          // case of backward analysis on
-          // a method which potentially has
-          // an infinite loop and no return statement
-          entries = new ArrayList<D>();
-
-          // a single head is expected
-          assert g.getHeads().size() == 1;
-          D head = g.getHeads().get(0);
-
-          // collect all 'goto' statements to catch the 'goto' from the infinite loop
-          Set<D> visitedNodes = new HashSet<D>();
-          List<D> workList = new ArrayList<D>();
-          workList.add(head);
-          for (D current; !workList.isEmpty();) {
-            current = workList.remove(0);
-            visitedNodes.add(current);
-
-            // only add 'goto' statements
-            if (current instanceof GotoInst || current instanceof GotoStmt) {
-              entries.add(current);
-            }
-
-            for (D next : g.getSuccsOf(current)) {
-              if (visitedNodes.contains(next)) {
-                continue;
+          // In a backward analysis, entry points must include any return
+          // statements that exist (i.e. the 'actualEntries') but there
+          // could also be infinite loops with no return statement that
+          // must be included in the analysis as well.
+          ArrayList<D> extraEntries = new ArrayList<D>();
+  
+          // Collect all 'goto' statements to capture the 'goto' from infinite loop(s)
+          HashSet<D> visitedNodes = new HashSet<D>();
+          LinkedList<D> workList = new LinkedList<D>(g.getHeads());
+          while (!workList.isEmpty()) {
+            D current = workList.remove(0);
+            if (visitedNodes.add(current)) {
+              // only add 'goto' statements
+              if (current instanceof GotoStmt || current instanceof GotoInst) {
+                extraEntries.add(current);
               }
-              workList.add(next);
+
+              for (D next : g.getSuccsOf(current)) {
+                if (!visitedNodes.contains(next)) {
+                  workList.add(next);
+                }
+              }
             }
           }
-
-          //
-          if (entries.isEmpty()) {
+          if (actualEntries.isEmpty() && extraEntries.isEmpty()) {
             throw new RuntimeException("error: backward analysis on an empty entry set.");
           }
+          entries = new ArrayList<D>(actualEntries.size() + extraEntries.size());
+          entries.addAll(actualEntries);
+          entries.addAll(extraEntries);
         }
+        assert (!entries.isEmpty());
+        assert (entries.stream().distinct().count() == entries.size());
       }
-
+      
       visitEntry(visited, superEntry, entries);
       superEntry.inFlow = entryFlow;
       superEntry.outFlow = entryFlow;
