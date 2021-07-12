@@ -602,10 +602,10 @@ public class OnFlyCallGraphBuilder {
                 String parameters = m.group("parameters");
                 if (parameters != null && !parameters.isEmpty()) {
                   for (String p : parameters.split(",")) {
-                    params.add(sc.getTypeUnsafe(p.trim()));
+                    params.add(sc.getTypeUnsafeUnescape(p.trim()));
                   }
                 }
-                ref = sc.makeMethodRef(receiverClass, methodName, params, sc.getTypeUnsafe(returnType),
+                ref = sc.makeMethodRef(receiverClass, methodName, params, sc.getTypeUnsafeUnescape(returnType),
                     Kind.isStatic(site.kind()));
               }
             }

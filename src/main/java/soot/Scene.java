@@ -1031,12 +1031,35 @@ public class Scene {
    * representation of the type is an array, the returned type will be an ArrayType with the base type resolved as described
    * above.
    *
+   * Notice: Recommend to use {@link #getTypeUnsafeUnescape}
+   *
    * @param arg
    *          A string description of the type
    * @return The Type if it can be resolved and null otherwise
    */
   public Type getTypeUnsafe(String arg) {
     return getTypeUnsafe(arg, true);
+  }
+
+  /**
+   * The method do the same thing as the method {@link #getTypeUnsafe(String)} except for unescaping the argument.
+   *
+   * An argument passed into the method {@link #getTypeUnsafe} may be <b>quoted</b>, like them: <br/>
+   * <li>1. "sun.reflect.'annotation'.AnnotationType"<li/> <br/>
+   * <li>2. "java.lang.'annotation'.Annotation"<li/> <br/>
+   *
+   * If calling {@link #getTypeUnsafe(String)} with <b>quoted</b> argument, the method maybe return null. <br/>
+   *
+   * For example, after we call {@link #loadNecessaryClasses}, getTypeUnsafe("java.lang.'annotation'.Annotation") <br/>
+   * will return null but getTypeUnsafe("java.lang.annotation.Annotation") will not return null.
+   *
+   * @param arg
+   *          A string description of the type
+   * @return The Type if it can be resolved and null otherwise
+   */
+  public Type getTypeUnsafeUnescape(String arg) {
+    String unescapeName = unescapeName(arg);
+    return getTypeUnsafe(unescapeName);
   }
 
   /**
