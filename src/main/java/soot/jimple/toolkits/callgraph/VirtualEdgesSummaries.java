@@ -380,6 +380,22 @@ public class VirtualEdgesSummaries {
     return requiredTypeByKind.get(kind);
   }
 
+  /** Resolves a client-matched call-site summary, or the existing signature-based default. */
+  public VirtualEdge getVirtualEdgesMatchingCallSite(Stmt statement) {
+    if (statement.hasTag(VirtualEdgeSummaryTag.NAME)) {
+      return ((VirtualEdgeSummaryTag) statement.getTag(VirtualEdgeSummaryTag.NAME)).getSummary();
+    }
+    if (!statement.containsInvokeExpr()) {
+      return null;
+    }
+    InvokeExpr invoke = statement.getInvokeExpr();
+    if (invoke instanceof InstanceInvokeExpr) {
+      return getVirtualEdgesMatchingSubSig(((InstanceInvokeExpr) invoke).getBase().getType(),
+          new MethodSubSignature(invoke.getMethodRef()));
+    }
+    return getVirtualEdgesMatchingFunction(invoke.getMethodRef().getSignature());
+  }
+
   public VirtualEdge getVirtualEdgesMatchingFunction(String signature) {
     return staticinvokeEdges.get(signature);
   }

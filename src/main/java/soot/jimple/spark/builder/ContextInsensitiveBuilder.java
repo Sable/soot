@@ -78,12 +78,17 @@ public class ContextInsensitiveBuilder {
       pag.nativeMethodDriver = new NativeMethodDriver(new SparkNativeHelper(pag));
     }
     if (opts.on_fly_cg() && !opts.vta()) {
-      ofcg = new OnFlyCallGraph(pag, opts.apponly());
+      ofcg = createOnFlyCallGraph(pag, opts.apponly());
       pag.setOnFlyCallGraph(ofcg);
     } else {
       cgb = new CallGraphBuilder(DumbPointerAnalysis.v());
     }
     return pag;
+  }
+
+  /** Creates the on-the-fly call graph. Override to supply a custom builder for newly reachable methods. */
+  protected OnFlyCallGraph createOnFlyCallGraph(PAG pag, boolean appOnly) {
+    return new OnFlyCallGraph(pag, appOnly);
   }
 
   /** Fills in the pointer assignment graph returned by setup. */
