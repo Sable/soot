@@ -2157,7 +2157,9 @@ public class AsmMethodSource implements MethodSource {
     // b = (B) a;
     // return b;
     castAndReturnInliner.transform(jb);
-    DeadAssignmentEliminator.v().transform(jb);
+    if (!"false".equalsIgnoreCase(PhaseOptions.v().getPhaseOptions("jb.dae").get("enabled"))) {
+      DeadAssignmentEliminator.v().transform(jb);
+    }
 
     try {
       PackManager.v().getPack("jb").apply(jb);
@@ -2166,7 +2168,9 @@ public class AsmMethodSource implements MethodSource {
     }
     TrapTightener.removeInvalidTraps(jb);
     LocalPacker.v().transform(jb);
-    DeadAssignmentEliminator.v().transform(jb);
+    if (!"false".equalsIgnoreCase(PhaseOptions.v().getPhaseOptions("jb.dae").get("enabled"))) {
+      DeadAssignmentEliminator.v().transform(jb);
+    }
     UnconditionalBranchFolder.v().transform(jb);
 
     jb.ensureUniqueLocalNames();
