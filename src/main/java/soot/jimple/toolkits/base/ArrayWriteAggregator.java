@@ -24,6 +24,8 @@ package soot.jimple.toolkits.base;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -49,7 +51,6 @@ import soot.jimple.FieldRef;
 import soot.jimple.IdentityStmt;
 import soot.jimple.IntConstant;
 import soot.jimple.InvokeExpr;
-import soot.jimple.JimpleBody;
 import soot.jimple.NewArrayExpr;
 import soot.jimple.NewExpr;
 import soot.jimple.SpecialInvokeExpr;
@@ -248,11 +249,13 @@ public class ArrayWriteAggregator extends BodyTransformer {
     private AssignStmt assign;
     private int arraySize;
     private Set<Unit> loopParticipants;
+    private Map<Unit, Unit> mapAssignToCtor;
 
-    public Result(AssignStmt assign, int arraySize, Set<Unit> loopParticipants) {
+    public Result(AssignStmt assign, int arraySize, Map<Unit, Unit> mapAssignToCtor, Set<Unit> loopParticipants) {
       this.assign = assign;
       this.arraySize = arraySize;
       this.loopParticipants = loopParticipants;
+      this.mapAssignToCtor = mapAssignToCtor;
     }
 
     @Override
@@ -424,7 +427,8 @@ public class ArrayWriteAggregator extends BodyTransformer {
             Value rop = assignWrite.getRightOp();
             List<Unit> defs = ld.getDefsOfAt((Local) rop, write);
             for (Unit def : defs) {
-              units.insertAfter((Unit) assignWrite.clone(), def);
+              Unit d = mapAssignToCtor.getOrDefault(def, def);
+              units.insertAfter((Unit) assignWrite.clone(), d);
             }
           }
 
@@ -459,10 +463,13 @@ public class ArrayWriteAggregator extends BodyTransformer {
     private Set<Result> results = new HashSet<>();
 
     private Set<Unit> loopParticipants = new HashSet<>();
+    private Map<Unit, Unit> mapAssignToCtor;
 
-    public ArraySafetyAnalysis(Body body, DirectedGraph<Unit> graph, DominatorsFinder<Unit> mhg) {
+    public ArraySafetyAnalysis(Body body, DirectedGraph<Unit> graph, DominatorsFinder<Unit> mhg,
+        Map<Unit, Unit> mapAssignToCtor) {
       super(graph);
       this.body = body;
+      this.mapAssignToCtor = mapAssignToCtor;
       calcLoopInformation(graph);
       doAnalysis();
     }
@@ -555,7 +562,7 @@ public class ArrayWriteAggregator extends BodyTransformer {
             }
           }
           if (safe) {
-            Result res = new Result(assign, arraySize, loopParticipants);
+            Result res = new Result(assign, arraySize, mapAssignToCtor, loopParticipants);
             results.add(res);
             return;
           }
@@ -585,7 +592,7 @@ public class ArrayWriteAggregator extends BodyTransformer {
 
   @Override
   protected void internalTransform(Body b, String phaseName, Map<String, String> options) {
-    transformConstructorAliases(b);
+    Map<Unit, Unit> mapAssignToCtor = transformConstructorAliases(b);
 
     boolean hasInterestingArrayWrites = false;
     boolean hasInterestingNewArray = false;
@@ -622,11 +629,14 @@ public class ArrayWriteAggregator extends BodyTransformer {
     SimpleLocalUses uses = new SimpleLocalUses(b, ld);
     DominatorsFinder<Unit> mhg = new MHGDominatorsFinder<Unit>(graph);
 
+    if (mapAssignToCtor == null) {
+      mapAssignToCtor = Collections.emptyMap();
+    }
     // tries to figure out
     // whether it is safe to move an array initializer and the setter upward, i.e.
     // it must not trigger any exception (ArrayIndexOutOfBounds, Class loading exception)
     // and it must not escape the method before the write
-    ArraySafetyAnalysis analysis = new ArraySafetyAnalysis(b, graph, mhg);
+    ArraySafetyAnalysis analysis = new ArraySafetyAnalysis(b, graph, mhg, mapAssignToCtor);
     analysis.doAnalysis();
     List<Runnable> allActions = new ArrayList<>();
 
@@ -658,10 +668,13 @@ public class ArrayWriteAggregator extends BodyTransformer {
    * 
    * We want to try to defer these aliases to after the constructor call so that it can be removed later on. I've decided to
    * not make this as its own analysis since this is mostly relevant for this analysis.
+   * 
+   * @return a map from each new assignment to the constructor call
    */
-  private void transformConstructorAliases(Body body) {
+  private Map<Unit, Unit> transformConstructorAliases(Body body) {
     UnitPatchingChain units = body.getUnits();
     Iterator<Unit> snit = units.snapshotIterator();
+    Map<Unit, Unit> mapAssignToCtor = null;
     while (snit.hasNext()) {
       Unit u = snit.next();
       Stmt s = (Stmt) u;
@@ -675,7 +688,7 @@ public class ArrayWriteAggregator extends BodyTransformer {
           while (n != null) {
             n = body.getUnits().getSuccOf(n);
             if (n == null) {
-              return;
+              return mapAssignToCtor;
             }
             if (n instanceof AssignStmt) {
               AssignStmt potAlias = (AssignStmt) n;
@@ -686,7 +699,7 @@ public class ArrayWriteAggregator extends BodyTransformer {
                   aliasesCreators.add(potAlias);
                 } else {
                   // weird
-                  return;
+                  return mapAssignToCtor;
                 }
               } else {
                 aliases.remove(potAlias.getLeftOp());
@@ -696,6 +709,10 @@ public class ArrayWriteAggregator extends BodyTransformer {
             if (inv instanceof SpecialInvokeExpr && inv.getMethodRef().isConstructor()) {
               SpecialInvokeExpr sp = (SpecialInvokeExpr) inv;
               if (aliases.remove(sp.getBase())) {
+                if (mapAssignToCtor == null) {
+                  mapAssignToCtor = new HashMap<>();
+                }
+                mapAssignToCtor.put(assign, n);
                 if (!aliasesCreators.isEmpty()) {
                   // we have found the correct special invoke
                   // insert the aliases *after* the constructor call
@@ -710,6 +727,7 @@ public class ArrayWriteAggregator extends BodyTransformer {
         }
       }
     }
+    return mapAssignToCtor;
   }
 
 }
