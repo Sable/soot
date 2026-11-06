@@ -2165,7 +2165,13 @@ public class AsmMethodSource implements MethodSource {
       throw new RuntimeException("Failed to apply jb to " + m, t);
     }
     TrapTightener.removeInvalidTraps(jb);
-    LocalPacker.v().transform(jb);
+    if (PhaseOptions.getBoolean(PhaseOptions.v().getPhaseOptions("jb"), "use-original-names")) {
+      // General packing can give an unrelated stack temporary a source variable's name.
+      // Preserve the same name-aware packing policy used by the jb pack, including opt-out.
+      PackManager.v().getTransform("jb.ulp").apply(jb);
+    } else {
+      LocalPacker.v().transform(jb);
+    }
     DeadAssignmentEliminator.v().transform(jb);
     UnconditionalBranchFolder.v().transform(jb);
 
