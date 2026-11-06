@@ -339,22 +339,30 @@ public class FastHierarchy {
         // From Java Language Spec 2nd ed., Chapter 10, Arrays
         return base == rtObject || base == rtSerializable || base == rtCloneable || base instanceof WeakObjectType;
       } else {
-        // We can story any_subtype_of(x) in a variable of type x
+        // We can store any_subtype_of(x) in a variable of type x. Checked before touching the SootClasses so that
+        // phantom bases keep working (see 7bb46b9082).
         RefType childBase = ((AnySubType) child).getBase();
         if (childBase == parent) {
           return true;
         }
 
-        // If the child is any_subtype_of(x) and the parent is not x, this only works if all known subclasses of x
-        // cast-compatible to the parent
-        Deque<SootClass> worklist = new ArrayDeque<SootClass>();
+        // Likewise, we can store any_subtype_of(x) in a variable of any supertype of x: whatever the concrete runtime
+        // type turns out to be, it is a subtype of x and therefore of every supertype of x. This holds even if x is
+        // abstract or an interface and no concrete subclass of x is known yet.
         SootClass base = childBase.getSootClass();
+        final SootClass parentClass = ((RefType) parent).getSootClass();
+        if (canStoreClass(base, parentClass)) {
+          return true;
+        }
+
+        // If the parent is unrelated to x, this only works if some known concrete subclass of x is cast-compatible to
+        // the parent
+        Deque<SootClass> worklist = new ArrayDeque<SootClass>();
         if (base.isInterface()) {
           worklist.addAll(getAllImplementersOfInterface(base));
         } else {
           worklist.add(base);
         }
-        final SootClass parentClass = ((RefType) parent).getSootClass();
         {
           Set<SootClass> workset = new HashSet<>();
           SootClass cl;
