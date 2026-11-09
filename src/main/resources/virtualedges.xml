@@ -286,7 +286,7 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="com.google.android.gms.tasks.Task call(java.util.concurrent.Executor,java.util.concurrent.Callable)"/>
+		<source declaringclass="com.google.android.gms.tasks.Tasks" invoketype="instance" subsignature="com.google.android.gms.tasks.Task call(java.util.concurrent.Executor,java.util.concurrent.Callable)"/>
 		<targets>
 			<direct index="1" subsignature="java.lang.Object call()" target-position="argument"/>
 		</targets>
@@ -312,14 +312,14 @@
 	</edge>
 	<!-- Kotlin Lazy Evaluation -->
 	<edge>
-		<source invoketype="instance" subsignature="kotlin.Lazy lazy(kotlin.jvm.functions.Function0)"/>
+		<source declaringclass="kotlin.LazyKt" invoketype="instance" subsignature="kotlin.Lazy lazy(kotlin.jvm.functions.Function0)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object invoke()" target-position="argument"/>
 		</targets>
 	</edge>
 	<!-- Google Ads -->
 	<edge>
-		<source invoketype="instance" subsignature="com.google.android.gms.ads.AdLoader$Builder forUnifiedNativeAd(com.google.android.gms.ads.formats.UnifiedNativeAd$OnUnifiedNativeAdLoadedListener)"/>
+		<source declaringclass="com.google.android.gms.ads.AdLoader$Builder" invoketype="instance" subsignature="com.google.android.gms.ads.AdLoader$Builder forUnifiedNativeAd(com.google.android.gms.ads.formats.UnifiedNativeAd$OnUnifiedNativeAdLoadedListener)"/>
 		<targets>
 			<direct index="0" subsignature="void onUnifiedNativeAdLoaded(com.google.android.gms.ads.formats.UnifiedNativeAd)" target-position="argument"/>
 		</targets>
@@ -339,7 +339,7 @@
 	</edge>
 	<!-- Android IAB -->
 	<edge>
-		<source invoketype="instance" subsignature="void startSetup(com.android.vending.billing.util.IabHelper$OnIabSetupFinishedListener)"/>
+		<source declaringclass="com.android.vending.billing.util.IabHelper" invoketype="instance" subsignature="void startSetup(com.android.vending.billing.util.IabHelper$OnIabSetupFinishedListener)"/>
 		<targets>
 			<direct index="0" subsignature="void onIabSetupFinished(com.android.vending.billing.util.IabResult)" target-position="argument"/>
 		</targets>
@@ -352,7 +352,7 @@
 	</edge>
 	<!-- Dagger -->
 	<edge>
-		<source invoketype="instance" subsignature="dagger.internal.Binding contributeProvidesBinding(java.lang.String,dagger.internal.ProvidesBinding)"/>
+		<source declaringclass="dagger.internal.BindingsGroup" invoketype="instance" subsignature="dagger.internal.Binding contributeProvidesBinding(java.lang.String,dagger.internal.ProvidesBinding)"/>
 		<targets>
 			<direct index="1" subsignature="java.lang.Object get()" target-position="argument"/>
 		</targets>
@@ -389,7 +389,7 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void setRedirectHandler(org.apache.http.client.RedirectHandler)"/>
+		<source declaringclass="org.apache.http.impl.client.AbstractHttpClient" invoketype="instance" subsignature="void setRedirectHandler(org.apache.http.client.RedirectHandler)"/>
 		<targets>
 			<direct index="0" subsignature="boolean isRedirectRequested(org.apache.http.HttpResponse,org.apache.http.protocol.HttpContext)" target-position="argument"/>
 		</targets>
@@ -579,14 +579,14 @@
 	</edge>
 	<!-- Google Inject -->
 	<edge>
-		<source invoketype="instance" subsignature="void register(com.google.inject.spi.InjectionListener)"/>
+		<source declaringclass="com.google.inject.spi.TypeEncounter" invoketype="instance" subsignature="void register(com.google.inject.spi.InjectionListener)"/>
 		<targets>
 			<direct index="0" subsignature="void afterInjection(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<!-- Bumptech Glide UI Framework -->
 	<edge>
-		<source invoketype="instance" subsignature="void register(java.lang.Class,java.lang.Class,com.bumptech.glide.load.model.ModelLoaderFactory)"/>
+		<source declaringclass="com.bumptech.glide.Glide" invoketype="instance" subsignature="void register(java.lang.Class,java.lang.Class,com.bumptech.glide.load.model.ModelLoaderFactory)"/>
 		<targets>
 			<direct index="2" subsignature="com.bumptech.glide.load.model.ModelLoader build(android.content.Context,com.bumptech.glide.load.model.GenericLoaderFactory)" target-position="argument"/>
 		</targets>
@@ -650,13 +650,13 @@
 	</edge>
 	<!-- java.util.stream.Stream -->
 	<edge>
-		<source invoketype="instance" subsignature="boolean allMatch(java.util.function.Predicate)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="boolean allMatch(java.util.function.Predicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean anyMatch(java.util.function.Predicate)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="boolean anyMatch(java.util.function.Predicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(java.lang.Object)" target-position="argument"/>
 		</targets>
@@ -673,7 +673,7 @@
 	</edge>
 	-->
 	<edge>
-		<source invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.BiConsumer,java.util.function.BiConsumer)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.BiConsumer,java.util.function.BiConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object get()" target-position="argument"/>
 			<direct index="1" subsignature="void accept(java.lang.Object,java.lang.Object)" target-position="argument"/>
@@ -681,110 +681,110 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream filter(java.util.function.Predicate)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.Stream filter(java.util.function.Predicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream map(java.util.function.Function)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.Stream map(java.util.function.Function)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream mapToDouble(java.util.function.ToDoubleFunction)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.DoubleStream mapToDouble(java.util.function.ToDoubleFunction)"/>
 		<targets>
 			<direct index="0" subsignature="double applyAsDouble(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.IntStream mapToInt(java.util.function.ToIntFunction)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.IntStream mapToInt(java.util.function.ToIntFunction)"/>
 		<targets>
 			<direct index="0" subsignature="int applyAsInt(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.LongStream mapToLong(java.util.function.ToLongFunction)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.LongStream mapToLong(java.util.function.ToLongFunction)"/>
 		<targets>
 			<direct index="0" subsignature="long applyAsLong(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.Optional max(java.util.Comparator)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.Optional max(java.util.Comparator)"/>
 		<targets>
 			<direct index="0" subsignature="int compare(java.lang.Object,java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.Optional min(java.util.Comparator)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.Optional min(java.util.Comparator)"/>
 		<targets>
 			<direct index="0" subsignature="int compare(java.lang.Object,java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean noneMatch(java.util.function.Predicate)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="boolean noneMatch(java.util.function.Predicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream peek(java.util.function.Consumer)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.Stream peek(java.util.function.Consumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.Optional reduce(java.util.function.BinaryOperator)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.Optional reduce(java.util.function.BinaryOperator)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(java.lang.Object,java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.lang.Object reduce(java.lang.Object,java.util.function.BinaryOperator)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.lang.Object reduce(java.lang.Object,java.util.function.BinaryOperator)"/>
 		<targets>
 			<direct index="1" subsignature="java.lang.Object apply(java.lang.Object,java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.lang.Object reduce(java.lang.Object,java.util.function.BiFunction,java.util.function.BinaryOperator)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.lang.Object reduce(java.lang.Object,java.util.function.BiFunction,java.util.function.BinaryOperator)"/>
 		<targets>
 			<direct index="1" subsignature="java.lang.Object apply(java.lang.Object,java.lang.Object)" target-position="argument"/>
 			<direct index="2" subsignature="java.lang.Object apply(java.lang.Object,java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream flatMap(java.util.function.Function)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.Stream flatMap(java.util.function.Function)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream flatMapToDouble(java.util.function.Function)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.DoubleStream flatMapToDouble(java.util.function.Function)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.IntStream flatMapToInt(java.util.function.Function)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.IntStream flatMapToInt(java.util.function.Function)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.LongStream flatMapToLong(java.util.function.Function)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.LongStream flatMapToLong(java.util.function.Function)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEach(java.util.function.Consumer)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="void forEach(java.util.function.Consumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEachOrdered(java.util.function.Consumer)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="void forEachOrdered(java.util.function.Consumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(java.lang.Object)" target-position="argument"/>
 		</targets>
@@ -802,26 +802,26 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream sorted(java.util.Comparator)"/>
+		<source declaringclass="java.util.stream.Stream" invoketype="instance" subsignature="java.util.stream.Stream sorted(java.util.Comparator)"/>
 		<targets>
 			<direct index="0" subsignature="int compare(java.lang.Object,java.lang.Object)" target-position="argument"/>
 		</targets>
 	</edge>
 	<!-- java.util.stream.DoubleStream -->
 	<edge>
-		<source invoketype="instance" subsignature="boolean allMatch(java.util.function.DoublePredicate)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="boolean allMatch(java.util.function.DoublePredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean anyMatch(java.util.function.DoublePredicate)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="boolean anyMatch(java.util.function.DoublePredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.ObjDoubleConsumer,java.util.function.BiConsumer)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.ObjDoubleConsumer,java.util.function.BiConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object get()" target-position="argument"/>
 			<direct index="1" subsignature="void accept(java.lang.Object,double)" target-position="argument"/>
@@ -829,25 +829,25 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream filter(java.util.function.DoublePredicate)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.stream.DoubleStream filter(java.util.function.DoublePredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream flatMap(java.util.function.DoubleFunction)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.stream.DoubleStream flatMap(java.util.function.DoubleFunction)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEach(java.util.function.DoubleConsumer)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="void forEach(java.util.function.DoubleConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEachOrdered(java.util.function.DoubleConsumer)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="void forEachOrdered(java.util.function.DoubleConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(double)" target-position="argument"/>
 		</targets>
@@ -865,68 +865,68 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream map(java.util.function.DoubleUnaryOperator)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.stream.DoubleStream map(java.util.function.DoubleUnaryOperator)"/>
 		<targets>
 			<direct index="0" subsignature="double applyAsDouble(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream mapToInt(java.util.function.DoubleToIntFunction)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.stream.Stream mapToInt(java.util.function.DoubleToIntFunction)"/>
 		<targets>
 			<direct index="0" subsignature="int applyAsInt(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream mapToLong(java.util.function.DoubleToLongFunction)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.stream.Stream mapToLong(java.util.function.DoubleToLongFunction)"/>
 		<targets>
 			<direct index="0" subsignature="long applyAsInt(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream mapToObj(java.util.function.DoubleFunction)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.stream.Stream mapToObj(java.util.function.DoubleFunction)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean noneMatch(java.util.function.DoublePredicate)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="boolean noneMatch(java.util.function.DoublePredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream peek(java.util.function.DoubleConsumer)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.stream.DoubleStream peek(java.util.function.DoubleConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.OptionalDouble reduce(java.util.function.DoubleBinaryOperator)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="java.util.OptionalDouble reduce(java.util.function.DoubleBinaryOperator)"/>
 		<targets>
 			<direct index="0" subsignature="double applyAsDouble(double,double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="double reduce(double,java.util.function.DoubleBinaryOperator)"/>
+		<source declaringclass="java.util.stream.DoubleStream" invoketype="instance" subsignature="double reduce(double,java.util.function.DoubleBinaryOperator)"/>
 		<targets>
 			<direct index="1" subsignature="double applyAsDouble(double,double)" target-position="argument"/>
 		</targets>
 	</edge>
 	<!-- java.util.stream.IntStream -->
 	<edge>
-		<source invoketype="instance" subsignature="boolean allMatch(java.util.function.IntPredicate)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="boolean allMatch(java.util.function.IntPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean anyMatch(java.util.function.IntPredicate)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="boolean anyMatch(java.util.function.IntPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.ObjIntConsumer,java.util.function.BiConsumer)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.ObjIntConsumer,java.util.function.BiConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object get()" target-position="argument"/>
 			<direct index="1" subsignature="void accept(java.lang.Object,int)" target-position="argument"/>
@@ -934,25 +934,25 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.IntStream filter(java.util.function.IntPredicate)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.stream.IntStream filter(java.util.function.IntPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.IntStream flatMap(java.util.function.IntFunction)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.stream.IntStream flatMap(java.util.function.IntFunction)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEach(java.util.function.IntConsumer)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="void forEach(java.util.function.IntConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEachOrdered(java.util.function.IntConsumer)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="void forEachOrdered(java.util.function.IntConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(int)" target-position="argument"/>
 		</targets>
@@ -970,68 +970,68 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.IntStream map(java.util.function.IntUnaryOperator)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.stream.IntStream map(java.util.function.IntUnaryOperator)"/>
 		<targets>
 			<direct index="0" subsignature="int applyAsInt(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream mapToDouble(java.util.function.IntToDoubleFunction)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.stream.DoubleStream mapToDouble(java.util.function.IntToDoubleFunction)"/>
 		<targets>
 			<direct index="0" subsignature="double applyAsDouble(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.LongStream mapToLong(java.util.function.IntToLongFunction)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.stream.LongStream mapToLong(java.util.function.IntToLongFunction)"/>
 		<targets>
 			<direct index="0" subsignature="long applyAsLong(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream mapToObj(java.util.function.IntFunction)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.stream.Stream mapToObj(java.util.function.IntFunction)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean noneMatch(java.util.function.IntPredicate)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="boolean noneMatch(java.util.function.IntPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.IntStream peek(java.util.function.IntConsumer)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.stream.IntStream peek(java.util.function.IntConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.OptionalInt reduce(java.util.function.IntBinaryOperator)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="java.util.OptionalInt reduce(java.util.function.IntBinaryOperator)"/>
 		<targets>
 			<direct index="0" subsignature="int applyAsInt(int,int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="int reduce(int,java.util.function.IntBinaryOperator)"/>
+		<source declaringclass="java.util.stream.IntStream" invoketype="instance" subsignature="int reduce(int,java.util.function.IntBinaryOperator)"/>
 		<targets>
 			<direct index="1" subsignature="int applyAsDouble(int,int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<!-- java.util.stream.LongStream -->
 	<edge>
-		<source invoketype="instance" subsignature="boolean allMatch(java.util.function.LongPredicate)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="boolean allMatch(java.util.function.LongPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean anyMatch(java.util.function.LongPredicate)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="boolean anyMatch(java.util.function.LongPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.ObjLongConsumer,java.util.function.BiConsumer)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.lang.Object collect(java.util.function.Supplier,java.util.function.ObjLongConsumer,java.util.function.BiConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object get()" target-position="argument"/>
 			<direct index="1" subsignature="void accept(java.lang.Object,long)" target-position="argument"/>
@@ -1039,25 +1039,25 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.LongStream filter(java.util.function.LongPredicate)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.stream.LongStream filter(java.util.function.LongPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.LongStream flatMap(java.util.function.LongFunction)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.stream.LongStream flatMap(java.util.function.LongFunction)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEach(java.util.function.LongConsumer)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="void forEach(java.util.function.LongConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="void forEachOrdered(java.util.function.LongConsumer)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="void forEachOrdered(java.util.function.LongConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(long)" target-position="argument"/>
 		</targets>
@@ -1075,49 +1075,49 @@
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.LongStream map(java.util.function.LongUnaryOperator)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.stream.LongStream map(java.util.function.LongUnaryOperator)"/>
 		<targets>
 			<direct index="0" subsignature="long applyAsLong(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.DoubleStream mapToDouble(java.util.function.IntToDoubleFunction)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.stream.DoubleStream mapToDouble(java.util.function.IntToDoubleFunction)"/>
 		<targets>
 			<direct index="0" subsignature="double applyAsDouble(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.IntStream mapToInt(java.util.function.LongToIntFunction)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.stream.IntStream mapToInt(java.util.function.LongToIntFunction)"/>
 		<targets>
 			<direct index="0" subsignature="int applyAsInt(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.Stream mapToObj(java.util.function.LongFunction)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.stream.Stream mapToObj(java.util.function.LongFunction)"/>
 		<targets>
 			<direct index="0" subsignature="java.lang.Object apply(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="boolean noneMatch(java.util.function.LongPredicate)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="boolean noneMatch(java.util.function.LongPredicate)"/>
 		<targets>
 			<direct index="0" subsignature="boolean test(long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.stream.LongStream peek(java.util.function.LongConsumer)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.stream.LongStream peek(java.util.function.LongConsumer)"/>
 		<targets>
 			<direct index="0" subsignature="void accept(int)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="java.util.OptionalLong reduce(java.util.function.LongBinaryOperator)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="java.util.OptionalLong reduce(java.util.function.LongBinaryOperator)"/>
 		<targets>
 			<direct index="0" subsignature="long applyAsLong(long,long)" target-position="argument"/>
 		</targets>
 	</edge>
 	<edge>
-		<source invoketype="instance" subsignature="long reduce(long,java.util.function.LongBinaryOperator)"/>
+		<source declaringclass="java.util.stream.LongStream" invoketype="instance" subsignature="long reduce(long,java.util.function.LongBinaryOperator)"/>
 		<targets>
 			<direct index="1" subsignature="long applyAsLong(long,long)" target-position="argument"/>
 		</targets>
