@@ -22,8 +22,6 @@ package soot.jimple.toolkits.callgraph;
  * #L%
  */
 
-import com.google.common.collect.Iterables;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,12 +52,16 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import soot.ArrayType;
 import soot.Body;
+import soot.FastHierarchy;
 import soot.Kind;
 import soot.MethodSubSignature;
 import soot.ModuleUtil;
 import soot.RefType;
 import soot.Scene;
+import soot.SootClass;
+import soot.Type;
 import soot.Value;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
@@ -78,7 +80,42 @@ public class VirtualEdgesSummaries {
 
   private static final String SUMMARIESFILE = "virtualedges.xml";
 
-  protected final HashMap<MethodSubSignature, VirtualEdge> instanceinvokeEdges = new LinkedHashMap<>();
+  private class InstanceInvokeEdges {
+    private ArrayList<VirtualEdge> edges = new ArrayList<>();
+
+    public VirtualEdge matchEdge(RefType type) {
+      FastHierarchy fh = Scene.v().getOrMakeFastHierarchy();
+      VirtualEdge edge = null;
+      boolean isOriginal = true;
+      for (VirtualEdge p : edges) {
+        final InstanceinvokeSource src = (InstanceinvokeSource) p.source;
+        final RefType edgeType = src.declaringType;
+        if (!edgeType.hasSootClass()) {
+          continue;
+        }
+        SootClass cl = edgeType.getSootClass();
+        if (cl.resolvingLevel() >= SootClass.HIERARCHY && fh.canStoreType(type, edgeType)) {
+          if (edge == null) {
+            edge = p;
+          } else {
+            if (isOriginal) {
+              //clone
+              edge = new VirtualEdge(edge.getEdgeType(), src, new HashSet<>(edge.getTargets()));
+              isOriginal = false;
+            }
+            edge.targets.addAll(p.targets);
+          }
+        }
+      }
+      return edge;
+    }
+
+    public void compact() {
+      edges.trimToSize();
+    }
+  }
+
+  protected final HashMap<MethodSubSignature, InstanceInvokeEdges> instanceinvokeEdges = new LinkedHashMap<>();
   protected final HashMap<String, VirtualEdge> staticinvokeEdges = new LinkedHashMap<>();
 
   protected final Map<Kind, RefType> requiredTypeByKind = new HashMap<>();
@@ -189,17 +226,14 @@ public class VirtualEdgesSummaries {
         }
       }
     }
+    compact();
     logger.debug("Found {} instanceinvoke, {} staticinvoke edge descriptions", instanceinvokeEdges.size(),
         staticinvokeEdges.size());
   }
 
   protected void addInstanceInvoke(VirtualEdge edg, MethodSubSignature subsig) {
-    VirtualEdge existing = instanceinvokeEdges.get(subsig);
-    if (existing != null) {
-      existing.targets.addAll(edg.targets);
-    } else {
-      instanceinvokeEdges.put(subsig, edg);
-    }
+    InstanceInvokeEdges e = instanceinvokeEdges.computeIfAbsent(subsig, (x) -> new InstanceInvokeEdges());
+    e.edges.add(edg);
   }
 
   public VirtualEdgesSummaries(Collection<VirtualEdge> edges) {
@@ -211,6 +245,13 @@ public class VirtualEdgesSummaries {
         StaticinvokeSource stat = (StaticinvokeSource) vi.source;
         staticinvokeEdges.put(stat.signature, vi);
       }
+    }
+    compact();
+  }
+
+  private void compact() {
+    for (InstanceInvokeEdges edges : instanceinvokeEdges.values()) {
+      edges.compact();
     }
   }
 
@@ -224,7 +265,13 @@ public class VirtualEdgesSummaries {
     Element root = document.createElement("virtualedges");
     document.appendChild(root);
 
-    for (VirtualEdge edge : Iterables.concat(instanceinvokeEdges.values(), staticinvokeEdges.values())) {
+    for (InstanceInvokeEdges i : instanceinvokeEdges.values()) {
+      for (VirtualEdge edge : i.edges) {
+        Node e = edgeToXML(document, edge);
+        root.appendChild(e);
+      }
+    }
+    for (VirtualEdge edge : staticinvokeEdges.values()) {
       Node e = edgeToXML(document, edge);
       root.appendChild(e);
     }
@@ -308,8 +355,25 @@ public class VirtualEdgesSummaries {
     return target;
   }
 
-  public VirtualEdge getVirtualEdgesMatchingSubSig(MethodSubSignature subsig) {
-    return instanceinvokeEdges.get(subsig);
+  public VirtualEdge getVirtualEdgesMatchingSubSig(Type type, MethodSubSignature subsig) {
+    RefType rt;
+    if (type instanceof ArrayType) {
+      rt = Scene.v().getObjectType();
+    } else if (type instanceof RefType) {
+      rt = (RefType) type;
+    } else {
+      //primtype
+      return null;
+    }
+    InstanceInvokeEdges i = instanceinvokeEdges.get(subsig);
+    if (i == null) {
+      return null;
+    }
+    if (rt.getSootClass().isApplicationClass()) {
+      //We have the real code, no need to use virtual edges
+      return null;
+    }
+    return i.matchEdge(rt);
   }
 
   public RefType getRequiredType(Kind kind) {
@@ -509,6 +573,9 @@ public class VirtualEdgesSummaries {
      *          The subsignature of the method that is invoked
      */
     public InstanceinvokeSource(RefType declaringType, String subSignature) {
+      if (declaringType == null) {
+        throw new IllegalArgumentException("Declaring type is null");
+      }
       this.subSignature = new MethodSubSignature(Scene.v().getSubSigNumberer().findOrAdd(subSignature));
       this.declaringType = declaringType;
     }
@@ -1076,7 +1143,9 @@ public class VirtualEdgesSummaries {
 
   public Set<VirtualEdge> getAllVirtualEdges() {
     Set<VirtualEdge> allEdges = new HashSet<>(instanceinvokeEdges.size() + staticinvokeEdges.size());
-    allEdges.addAll(instanceinvokeEdges.values());
+    for (InstanceInvokeEdges f : instanceinvokeEdges.values()) {
+      allEdges.addAll(f.edges);
+    }
     allEdges.addAll(staticinvokeEdges.values());
     return allEdges;
   }
