@@ -873,7 +873,7 @@ public class OnFlyCallGraphBuilder {
           if (!(iie instanceof SpecialInvokeExpr)) {
             MethodSubSignature subSig = new MethodSubSignature(iie.getMethodRef());
 
-            VirtualEdge virtualEdge = virtualEdgeSummaries.getVirtualEdgesMatchingSubSig(subSig);
+            VirtualEdge virtualEdge = virtualEdgeSummaries.getVirtualEdgesMatchingSubSig(iie.getBase().getType(), subSig);
             if (virtualEdge != null) {
               for (VirtualEdgeTarget t : virtualEdge.targets) {
                 if (t instanceof InvocationVirtualEdgeTarget) {
