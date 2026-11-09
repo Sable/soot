@@ -26,11 +26,11 @@ import java.util.List;
 
 import soot.ArrayType;
 import soot.Body;
-import soot.IntType;
 import soot.PatchingChain;
 import soot.Unit;
 import soot.jimple.ArrayRef;
 import soot.jimple.Stmt;
+import soot.jimple.internal.IIntLikeType;
 
 /**
  * Validates that each ArrayRef points to an ArrayType and that its index is an IntType.
@@ -57,9 +57,9 @@ public enum ArrayRefValidator implements BodyValidator {
           exceptions.add(new ValidationException(unit, "Array " + ref.getBase() + " has type " + ref.getBase().getType()
               + " which is no ArrayType in " + body.getMethod()));
         }
-        if (!(ref.getIndex().getType() instanceof IntType)) {
+        if (!(ref.getIndex().getType() instanceof IIntLikeType)) {
           exceptions.add(new ValidationException(unit, "Array index " + ref + " has type " + ref.getIndex().getType()
-              + " which is no IntType in " + body.getMethod()));
+              + " which is no intlike type in " + body.getMethod()));
         }
       }
     }
