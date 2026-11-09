@@ -24,7 +24,9 @@ package soot;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -174,6 +176,56 @@ public class FastHierarchyTest {
     assertThat(fh.getAllImplementersOfInterface(interfaceC2), containsInAnyOrder(scA, scB, scC2));
 
     assertThat(fh.getAllImplementersOfInterface(interfaceD), containsInAnyOrder(scA, scB, scC1, scD));
+  }
+
+  @Test
+  public void testCanStoreAnySubTypeInSupertypeWithoutKnownConcreteSubclass() {
+    G.reset();
+    Scene s = Scene.v();
+    s.loadNecessaryClasses();
+
+    SootClass contract = generacteSceneClass("Contract", Modifier.INTERFACE);
+    SootClass otherContract = generacteSceneClass("OtherContract", Modifier.INTERFACE);
+    SootClass abstractBase = generacteSceneClass("AbstractBase", Modifier.ABSTRACT);
+    abstractBase.addInterface(contract);
+    SootClass subContract = generacteSceneClass("SubContract", Modifier.INTERFACE);
+    subContract.addInterface(contract);
+
+    FastHierarchy fh = s.getOrMakeFastHierarchy();
+    Type anyAbstractBase = AnySubType.v(abstractBase.getType());
+    Type anySubContract = AnySubType.v(subContract.getType());
+
+    // any_subtype_of(x) is storable in x (already the case before) ...
+    assertTrue(fh.canStoreType(anyAbstractBase, abstractBase.getType()));
+    // ... and therefore in every supertype of x, even if no concrete subclass of x is known
+    assertTrue(fh.canStoreType(anyAbstractBase, contract.getType()));
+    assertTrue(fh.canStoreType(anyAbstractBase, s.getObjectType()));
+    assertTrue(fh.canStoreType(anySubContract, contract.getType()));
+    assertTrue(fh.canStoreType(anySubContract, s.getObjectType()));
+
+    // A type unrelated to x still requires a known concrete subclass of x that implements it
+    assertFalse(fh.canStoreType(anyAbstractBase, otherContract.getType()));
+    assertFalse(fh.canStoreType(anySubContract, otherContract.getType()));
+  }
+
+  @Test
+  public void testCanStoreAnySubTypeInUnrelatedTypeViaConcreteSubclass() {
+    G.reset();
+    Scene s = Scene.v();
+    s.loadNecessaryClasses();
+
+    SootClass contract = generacteSceneClass("Contract", Modifier.INTERFACE);
+    SootClass otherContract = generacteSceneClass("OtherContract", Modifier.INTERFACE);
+    SootClass abstractBase = generacteSceneClass("AbstractBase", Modifier.ABSTRACT);
+    abstractBase.addInterface(contract);
+    SootClass concrete = generacteSceneClass("Concrete", 0);
+    concrete.setSuperclass(abstractBase);
+    concrete.addInterface(otherContract);
+
+    FastHierarchy fh = s.getOrMakeFastHierarchy();
+
+    // OtherContract is unrelated to AbstractBase, but the concrete subclass is a witness
+    assertTrue(fh.canStoreType(AnySubType.v(abstractBase.getType()), otherContract.getType()));
   }
 
   private static class FastHierarchyForUnittest extends FastHierarchy {
