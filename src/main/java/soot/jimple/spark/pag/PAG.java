@@ -416,6 +416,7 @@ public class PAG implements PointsToAnalysis {
   }
 
   protected final static Node[] EMPTY_NODE_ARRAY = new Node[0];
+  private static final InstanceInvokeExpr Ie = null;
 
   protected <K extends Node> Node[] lookup(Map<K, Object> m, K key) {
     Object valueList = m.get(key);
@@ -1099,7 +1100,9 @@ public class PAG implements PointsToAnalysis {
       InvokeExpr ie = e.srcStmt().getInvokeExpr();
       VirtualEdge ve = null;
       if (ie instanceof InstanceInvokeExpr) {
-        ve = summaries.getVirtualEdgesMatchingSubSig(new MethodSubSignature(ie.getMethodRef().getSubSignature()));
+        InstanceInvokeExpr iie = (InstanceInvokeExpr) ie;
+        ve = summaries.getVirtualEdgesMatchingSubSig(iie.getBase().getType(), 
+            new MethodSubSignature(ie.getMethodRef().getSubSignature()));
       } else if (ie instanceof StaticInvokeExpr) {
         ve = summaries.getVirtualEdgesMatchingFunction(ie.getMethodRef().getSignature());
       }

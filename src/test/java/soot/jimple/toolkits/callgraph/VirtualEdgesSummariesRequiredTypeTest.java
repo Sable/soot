@@ -35,6 +35,7 @@ import soot.G;
 import soot.Kind;
 import soot.RefType;
 import soot.Scene;
+import soot.SootClass;
 import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.VirtualEdge;
 
 /**
@@ -135,6 +136,8 @@ public class VirtualEdgesSummariesRequiredTypeTest {
 
   @Test
   public void requiredTypeDoesNotAffectEdgeLookup() throws Exception {
+    Scene.v().addBasicClass("java.util.concurrent.Executor", SootClass.SIGNATURES);
+    Scene.v().loadNecessaryClasses();
     // Sanity check: adding requiredType parsing must not break the existing edge lookup mechanism.
     VirtualEdgesSummaries summaries = load(
             "<edge type=\"EXECUTOR\" requiredType=\"java.lang.Runnable\">"
@@ -143,7 +146,7 @@ public class VirtualEdgesSummariesRequiredTypeTest {
                     + "<targets><direct index=\"0\" subsignature=\"void run()\" target-position=\"argument\"/></targets>"
                     + "</edge>");
 
-    VirtualEdge edge = summaries.getVirtualEdgesMatchingSubSig(
+    VirtualEdge edge = summaries.getVirtualEdgesMatchingSubSig(RefType.v("java.util.concurrent.Executor"),
             new soot.MethodSubSignature(Scene.v().getSubSigNumberer().findOrAdd("void execute(java.lang.Runnable)")));
 
     assertNotNull("The edge itself should still be resolvable by its subsignature", edge);
