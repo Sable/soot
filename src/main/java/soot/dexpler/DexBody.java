@@ -1395,8 +1395,9 @@ public class DexBody {
                     }
                   }
                   if (hasArrayType) {
-                    LinkedHashSet<Type> dnew = new LinkedHashSet<>(d);
-                    dnew.addFirst(p);
+                    LinkedHashSet<Type> dnew = new LinkedHashSet<>();
+                    dnew.add(p);
+                    dnew.addAll(d);
                     definiteConstraints.put(l, dnew);
                   }
                 }
