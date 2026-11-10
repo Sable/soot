@@ -61,6 +61,8 @@ import soot.ModuleUtil;
 import soot.RefType;
 import soot.Scene;
 import soot.SootClass;
+import soot.SootMethod;
+import soot.SootMethodRef;
 import soot.Type;
 import soot.Value;
 import soot.jimple.InstanceInvokeExpr;
@@ -369,7 +371,15 @@ public class VirtualEdgesSummaries {
     if (i == null) {
       return null;
     }
-    if (rt.getSootClass().isApplicationClass()) {
+    if (rt.hasSootClass() && rt.getSootClass().isApplicationClass()) {
+      final Scene sc = Scene.v();
+      SootMethodRef mr = sc.makeMethodRef(rt.getSootClass(), subsig, true);
+      for (SootMethod r : sc.getOrMakeFastHierarchy().resolveAbstractDispatch(rt.getSootClass(), mr)) {
+        if (!r.getDeclaringClass().isApplicationClass()) {
+          //One non-application class may be called -> we should assume virtual edges
+          return i.matchEdge(rt);
+        }
+      }
       //We have the real code, no need to use virtual edges
       return null;
     }
