@@ -870,10 +870,8 @@ public class OnFlyCallGraphBuilder {
           InstanceInvokeExpr iie = (InstanceInvokeExpr) ie;
 
           Local receiver = (Local) iie.getBase();
-          if (!(iie instanceof SpecialInvokeExpr)) {
-            MethodSubSignature subSig = new MethodSubSignature(iie.getMethodRef());
-
-            VirtualEdge virtualEdge = virtualEdgeSummaries.getVirtualEdgesMatchingSubSig(iie.getBase().getType(), subSig);
+          if (!(iie instanceof SpecialInvokeExpr) || s.hasTag(VirtualEdgeSummaryTag.NAME)) {
+            VirtualEdge virtualEdge = virtualEdgeSummaries.getVirtualEdgesMatchingCallSite(s);
             if (virtualEdge != null) {
               for (VirtualEdgeTarget t : virtualEdge.targets) {
                 if (t instanceof InvocationVirtualEdgeTarget) {
@@ -883,7 +881,8 @@ public class OnFlyCallGraphBuilder {
                 }
               }
             }
-          } else {
+          }
+          if (iie instanceof SpecialInvokeExpr) {
             addEdge(m, s, ie.getMethod(), Kind.SPECIAL);
           }
 
@@ -898,7 +897,10 @@ public class OnFlyCallGraphBuilder {
           if (tgt != null) {
             addEdge(m, s, tgt);
             String signature = tgt.getSignature();
-            VirtualEdge virtualEdge = virtualEdgeSummaries.getVirtualEdgesMatchingFunction(signature);
+            // Preserve resolved-target lookup for untagged static calls.
+            VirtualEdge virtualEdge = s.hasTag(VirtualEdgeSummaryTag.NAME)
+                ? virtualEdgeSummaries.getVirtualEdgesMatchingCallSite(s)
+                : virtualEdgeSummaries.getVirtualEdgesMatchingFunction(signature);
             if (virtualEdge != null) {
               for (VirtualEdgeTarget t : virtualEdge.targets) {
                 if (t instanceof DirectTarget) {

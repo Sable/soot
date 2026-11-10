@@ -81,8 +81,12 @@ import soot.jimple.spark.sets.SharedListSet;
 import soot.jimple.spark.sets.SortedArraySet;
 import soot.jimple.spark.solver.OnFlyCallGraph;
 import soot.jimple.toolkits.callgraph.Edge;
+import soot.jimple.toolkits.callgraph.VirtualEdgeSummaryTag;
 import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries;
+import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.AbstractParameterMapping;
 import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.DeferredVirtualEdgeTarget;
+import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.DirectParameterMapping;
+import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.DirectTarget;
 import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.InstanceinvokeSource;
 import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.InvocationVirtualEdgeTarget;
 import soot.jimple.toolkits.callgraph.VirtualEdgesSummaries.StaticinvokeSource;
@@ -1098,14 +1102,7 @@ public class PAG implements PointsToAnalysis {
       }
       VirtualEdgesSummaries summaries = getOnFlyCallGraph().ofcgb().getVirtualEdgeSummaries();
       InvokeExpr ie = e.srcStmt().getInvokeExpr();
-      VirtualEdge ve = null;
-      if (ie instanceof InstanceInvokeExpr) {
-        InstanceInvokeExpr iie = (InstanceInvokeExpr) ie;
-        ve = summaries.getVirtualEdgesMatchingSubSig(iie.getBase().getType(), 
-            new MethodSubSignature(ie.getMethodRef().getSubSignature()));
-      } else if (ie instanceof StaticInvokeExpr) {
-        ve = summaries.getVirtualEdgesMatchingFunction(ie.getMethodRef().getSignature());
-      }
+      VirtualEdge ve = summaries.getVirtualEdgesMatchingCallSite(e.srcStmt());
       boolean isExpectedType = false;
       if (e.srcStmt().hasTag(ExpectedTypeTag.NAME)) {
         ExpectedTypeTag tag = (ExpectedTypeTag) e.srcStmt().getTag(ExpectedTypeTag.NAME);
@@ -1120,10 +1117,13 @@ public class PAG implements PointsToAnalysis {
       // The source is equal for direct and indirect targets
       VirtualEdgeSource edgeSrc = ve.getSource();
 
-      if (edgeSrc instanceof InstanceinvokeSource || edgeSrc instanceof StaticinvokeSource || isExpectedType) {
+      boolean matchedSummary = e.srcStmt().hasTag(VirtualEdgeSummaryTag.NAME);
+      if (matchedSummary || edgeSrc instanceof InstanceinvokeSource || edgeSrc instanceof StaticinvokeSource
+          || isExpectedType) {
         for (VirtualEdgeTarget edgeTgt : ve.getTargets()) {
           if (edgeTgt instanceof InvocationVirtualEdgeTarget) {
             InvocationVirtualEdgeTarget ieEdgeTgt = (InvocationVirtualEdgeTarget) edgeTgt;
+            // A local summary has one target; dispatch already selected e.tgt(), including covariant return types.
             for (Local local : getOnFlyCallGraph().ofcgb().getReceiversOfVirtualEdge(ieEdgeTgt, ie)) {
               Node parm = srcmpag.nodeFactory().getNode(local);
               parm = srcmpag.parameterize(parm, e.srcCtxt());
@@ -1142,6 +1142,27 @@ public class PAG implements PointsToAnalysis {
               if (local.getType() instanceof RefType) {
                 RefType rtTarget = (RefType) local.getType();
                 Scene.v().makeMethodRef(rtTarget.getSootClass(), ieEdgeTgt.getTargetMethod(), false).resolve();
+              }
+            }
+            if (matchedSummary && ieEdgeTgt instanceof DirectTarget) {
+              for (AbstractParameterMapping mapping : ((DirectTarget) ieEdgeTgt).getParameterMappings()) {
+                if (!(mapping instanceof DirectParameterMapping)) {
+                  throw new IllegalArgumentException("Call-site summaries require direct parameter mappings");
+                }
+                DirectParameterMapping direct = (DirectParameterMapping) mapping;
+                Value value = direct.getMappedSourceArgumentArg(ie);
+                if (!(value.getType() instanceof RefLikeType)) {
+                  continue;
+                }
+                Node from = srcmpag.nodeFactory().getNode(value);
+                Node to = direct.getTargetIndex() == -1 ? tgtmpag.nodeFactory().caseThis()
+                    : tgtmpag.nodeFactory().caseParm(direct.getTargetIndex());
+                if (from != null && to != null) {
+                  from = srcmpag.parameterize(from, e.srcCtxt()).getReplacement();
+                  to = tgtmpag.parameterize(to, e.tgtCtxt()).getReplacement();
+                  addEdge(from, to);
+                  addInterproceduralAssignment(from, to, e);
+                }
               }
             }
           } else if (edgeTgt instanceof DeferredVirtualEdgeTarget && e.srcStmt() instanceof AssignStmt
