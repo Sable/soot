@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +129,7 @@ import soot.jimple.DivExpr;
 import soot.jimple.DoubleConstant;
 import soot.jimple.FloatConstant;
 import soot.jimple.GotoStmt;
+import soot.jimple.IfStmt;
 import soot.jimple.IntConstant;
 import soot.jimple.InvokeExpr;
 import soot.jimple.Jimple;
@@ -1313,6 +1315,7 @@ public class DexBody {
   private void handleIncompatibleDexArrayTypes(Body b, MultiMap<Local, Type> maybetypeConstraints,
       Map<Local, Collection<Type>> definiteConstraints) {
     boolean arrayConstraintsNecessary = false;
+    boolean hasArrayTypes = false;
     UnknownType unknownType = UnknownType.v();
     for (Unit u : b.getUnits()) {
       Stmt s = (Stmt) u;
@@ -1325,6 +1328,7 @@ public class DexBody {
           // Since all Java arrays are Serializable, Clonable and Object, the same Jimple local can be used among different
           // array types without splitting
           if (ropType instanceof ArrayType) {
+            hasArrayTypes = true;
             Collection<Type> p = definiteConstraints.computeIfAbsent(write, new Function<Local, Collection<Type>>() {
 
               @Override
@@ -1342,44 +1346,105 @@ public class DexBody {
         }
       }
     }
-    if (arrayConstraintsNecessary) {
-      RefType weakObject = new WeakObjectType("java.lang.Object");
+    if (hasArrayTypes) {
+      RefType object = RefType.v("java.lang.Object");
       RefType serializable = RefType.v("java.io.Serializable");
       RefType clonable = RefType.v("java.lang.Cloneable");
-      RefType weakSerializable = null;
-      RefType weakCloneable = null;
+
+      // There are cases where variables are used as Objects. We need
+      // to make sure that Soot considers Object as a possible typing for these variables,
+      // since there are cases where this is the best option.
+      // minCasts will take care to take the more appropriate typing.
+      // Otherwise, we might end up with a lot of casts since Soot thinks it's forced
+      // to use the non-object typing.
+      // This is relevant only if there are multiple definitions for that variable, that could
+      // end up in a lot of casts.
+      Map<Local, Integer> defCount = new HashMap<>();
+      for (Unit u : b.getUnits()) {
+        if (u instanceof AssignStmt) {
+          AssignStmt assign = (AssignStmt) u;
+          Value lop = assign.getLeftOp();
+          if (definiteConstraints.containsKey(lop)) {
+            Local l = (Local) lop;
+            defCount.compute(l, (cl, p) -> {
+              if (p == null) {
+                return 1;
+              } else {
+                return 2;
+              }
+            });
+          }
+        }
+      }
       for (Unit u : b.getUnits()) {
         Stmt s = (Stmt) u;
-        // Performance optimization: Only if another method or field requires us to use the Cloneable or Serializable,
-        // we consider this as a valid type.
         if (s.containsInvokeExpr()) {
-          for (Type p : s.getInvokeExpr().getMethodRef().getParameterTypes()) {
-            if (p == clonable) {
-              weakCloneable = new WeakObjectType("java.lang.Cloneable");
-            } else if (p == serializable) {
-              weakSerializable = new WeakObjectType("java.io.Serializable");
+          int i = 0;
+          InvokeExpr iexpr = s.getInvokeExpr();
+          for (Type p : iexpr.getMethodRef().getParameterTypes()) {
+            Value a = iexpr.getArg(i);
+            if (a instanceof Local) {
+              Local l = (Local) a;
+              if (p == clonable || p == serializable || p == object) {
+                Collection<Type> d = definiteConstraints.get(l);
+                if (d != null && defCount.getOrDefault(l, 0) > 1) {
+                  boolean hasArrayType = false;
+                  for (Type t : d) {
+                    if (t instanceof ArrayType) {
+                      hasArrayType = true;
+                    }
+                  }
+                  if (hasArrayType) {
+                    LinkedHashSet<Type> dnew = new LinkedHashSet<>(d);
+                    dnew.addFirst(p);
+                    definiteConstraints.put(l, dnew);
+                  }
+                }
+              }
+
             }
-          }
-        } else if (s.containsFieldRef()) {
-          Type ft = s.getFieldRef().getType();
-          if (ft == clonable) {
-            weakCloneable = new WeakObjectType("java.lang.Cloneable");
-          } else if (ft == serializable) {
-            weakSerializable = new WeakObjectType("java.io.Serializable");
+            i++;
           }
         }
       }
 
-      for (Entry<Local, Collection<Type>> key : definiteConstraints.entrySet()) {
-        Collection<Type> vs = key.getValue();
-        if (vs.isEmpty()) {
-          // incompatible arrays -> we can use Serializable/Object
-          vs.add(weakObject);
-          if (weakSerializable != null) {
-            vs.add(weakSerializable);
+      if (arrayConstraintsNecessary) {
+        RefType weakObject = new WeakObjectType("java.lang.Object");
+        RefType weakSerializable = null;
+        RefType weakCloneable = null;
+        for (Unit u : b.getUnits()) {
+          Stmt s = (Stmt) u;
+          // Performance optimization: Only if another method or field requires us to use the Cloneable or Serializable,
+          // we consider this as a valid type.
+          if (s.containsInvokeExpr()) {
+            for (Type p : s.getInvokeExpr().getMethodRef().getParameterTypes()) {
+              if (p == clonable) {
+                weakCloneable = new WeakObjectType("java.lang.Cloneable");
+              } else if (p == serializable) {
+                weakSerializable = new WeakObjectType("java.io.Serializable");
+              }
+            }
+          } else if (s.containsFieldRef()) {
+            Type ft = s.getFieldRef().getType();
+            if (ft == clonable) {
+              weakCloneable = new WeakObjectType("java.lang.Cloneable");
+            } else if (ft == serializable) {
+              weakSerializable = new WeakObjectType("java.io.Serializable");
+            }
           }
-          if (weakCloneable != null) {
-            vs.add(weakCloneable);
+        }
+
+        for (Entry<Local, Collection<Type>> key : definiteConstraints.entrySet()) {
+          Collection<Type> vs = key.getValue();
+          if (vs.isEmpty()) {
+            // incompatible arrays -> we can use Serializable/Object
+            vs.add(weakObject);
+            if (weakSerializable != null) {
+              vs.add(weakSerializable);
+            }
+            if (weakCloneable != null) {
+              vs.add(weakCloneable);
+            }
           }
         }
       }
@@ -1586,11 +1651,39 @@ public class DexBody {
         }
 
       }
+      if (u instanceof IfStmt) {
+        IfStmt ifS = (IfStmt) u;
+        BinopExpr expr = (BinopExpr) ifS.getCondition();
+        Type t = expr.getKnownOperandType();
+        if (t != null) {
+          Value lop = expr.getOp1();
+          Value rop = expr.getOp2();
+          if (lop instanceof Local) {
+            Local l = (Local) lop;
+            l.setType(t);
+          }
+          if (rop instanceof Local) {
+            Local r = (Local) rop;
+            r.setType(t);
+          }
+        }
+      }
       Stmt s = (Stmt) u;
       if (s.containsInvokeExpr()) {
         InvokeExpr inv = s.getInvokeExpr();
+        Type it = inv.getType();
+        if (it instanceof PrimType && s instanceof AssignStmt) {
+          AssignStmt assign = (AssignStmt) s;
+          Local l = (Local) assign.getLeftOp();
+          l.setType(it);
+        }
         for (int pidx = 0; pidx < inv.getArgCount(); pidx++) {
           Value arg = inv.getArg(pidx);
+          Type at = arg.getType();
+          if (at instanceof PrimType && arg instanceof Local) {
+            Local l = (Local) arg;
+            l.setType(at);
+          }
           if (arg instanceof Constant) {
             Type t = inv.getMethodRef().getParameterType(pidx);
             if (t instanceof DoubleType && arg instanceof LongConstant) {

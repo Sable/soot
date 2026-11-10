@@ -54,6 +54,11 @@ public class JNeExpr extends AbstractJimpleIntBinopExpr implements NeExpr {
   }
 
   @Override
+  public Type getKnownOperandType() {
+    return JEqExpr.getKnownOperandType(getOp1(), getOp2());
+  }
+
+  @Override
   protected Unit makeBafInst(Type opType) {
     throw new RuntimeException("unsupported conversion: " + this);
     // return Baf.v().newNeInst(this.getOp1().getType());

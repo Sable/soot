@@ -25,10 +25,12 @@ import java.util.List;
  */
 
 import soot.BooleanType;
+import soot.PrimType;
 import soot.Type;
 import soot.Unit;
 import soot.Value;
 import soot.baf.Baf;
+import soot.jimple.Constant;
 import soot.jimple.ConvertToBaf;
 import soot.jimple.EqExpr;
 import soot.jimple.ExprSwitch;
@@ -60,6 +62,13 @@ public class JEqExpr extends AbstractJimpleIntBinopExpr implements EqExpr {
   }
 
   @Override
+  public Type getKnownOperandType() {
+    Value op1 = getOp1();
+    Value op2 = getOp2();
+    return getKnownOperandType(op1, op2);
+  }
+
+  @Override
   protected Unit makeBafInst(Type opType) {
     throw new RuntimeException("unsupported conversion: " + this);
     // return Baf.v().newEqInst(this.getOp1().getType()); }
@@ -74,8 +83,7 @@ public class JEqExpr extends AbstractJimpleIntBinopExpr implements EqExpr {
 
     // Both sides are the same trivial constant (null == null, 0 == 0): fold to true directly
     // instead of emitting a branch on a materialized constant.
-    if ((op1 instanceof NullConstant && op2 instanceof NullConstant)
-        || (isZero(op1) && isZero(op2))) {
+    if ((op1 instanceof NullConstant && op2 instanceof NullConstant) || (isZero(op1) && isZero(op2))) {
       Unit pushOne = Baf.v().newPushInst(IntConstant.v(1));
       pushOne.addAllTagsOf(context.getCurrentUnit());
       out.add(pushOne);
@@ -114,5 +122,15 @@ public class JEqExpr extends AbstractJimpleIntBinopExpr implements EqExpr {
   @Override
   public Object clone() {
     return new JEqExpr(Jimple.cloneIfNecessary(getOp1()), Jimple.cloneIfNecessary(getOp2()));
+  }
+
+  static Type getKnownOperandType(Value op1, Value op2) {
+    if (op2 instanceof Constant && op2.getType() instanceof PrimType) {
+      return op1.getType();
+    }
+    if (op1 instanceof Constant && op1.getType() instanceof PrimType) {
+      return op1.getType();
+    }
+    return null;
   }
 }
