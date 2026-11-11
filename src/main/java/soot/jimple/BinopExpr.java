@@ -1,5 +1,7 @@
 package soot.jimple;
 
+import soot.Type;
+
 /*-
  * #%L
  * Soot - a J*va Optimization Framework
@@ -41,4 +43,13 @@ public interface BinopExpr extends Expr {
   public String getSymbol();
 
   public String toString();
+
+  /**
+   * Returns the known operand type or null
+   * 
+   * @return the known operand type or null
+   */
+  public default Type getKnownOperandType() {
+    return null;
+  }
 }
