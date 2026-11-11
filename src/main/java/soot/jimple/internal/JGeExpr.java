@@ -1,6 +1,7 @@
 package soot.jimple.internal;
 
 import soot.BooleanType;
+import soot.IntType;
 
 /*-
  * #%L
@@ -51,6 +52,11 @@ public class JGeExpr extends AbstractJimpleIntBinopExpr implements GeExpr {
   @Override
   public void apply(Switch sw) {
     ((ExprSwitch) sw).caseGeExpr(this);
+  }
+
+  @Override
+  public Type getKnownOperandType() {
+    return IntType.v();
   }
 
   @Override

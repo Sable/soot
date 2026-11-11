@@ -680,6 +680,9 @@ public class TypeResolver {
           if (t != null) {
             simple.set(i);
             wl.clear(i);
+            for (BitSet bs : this.depends.values()) {
+              bs.clear(i);
+            }
             ((PartialConstantTyping) tg).setConstantTyping(v, t);
             continue;
           }
@@ -697,6 +700,9 @@ public class TypeResolver {
                   ((PartialConstantTyping) tg).setConstantTyping(v, d.iterator().next());
                   simple.set(i);
                   wl.clear(i);
+                  for (BitSet bs : this.depends.values()) {
+                    bs.clear(i);
+                  }
                 }
               }
             }

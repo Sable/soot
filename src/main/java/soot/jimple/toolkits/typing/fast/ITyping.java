@@ -1,5 +1,6 @@
 package soot.jimple.toolkits.typing.fast;
 
+import java.util.Collections;
 import java.util.Map;
 
 /*-
@@ -30,41 +31,85 @@ import soot.Local;
 import soot.Type;
 
 /**
- * Represents a data structure which saves typing information for 
- * local variables
+ * Represents a data structure which saves typing information for local variables
  */
 public interface ITyping {
 
+  public static final ITyping EMPTY_TYPING = new ITyping() {
+
+    @Override
+    public Type get(Local v) {
+      return null;
+    }
+
+    @Override
+    public void set(Local v, Type t) {
+    }
+
+    @Override
+    public Iterable<Local> getAllLocals() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return true;
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    @Override
+    public ITyping createCloneTyping() {
+      return this;
+    }
+
+    @Override
+    public Map<Local, Type> getMap() {
+      return Collections.emptyMap();
+    }
+
+  };
+
   /**
    * Returns the type (or null)
-   * @param v the local variable
+   * 
+   * @param v
+   *          the local variable
    * @return the type (or null)
    */
   public Type get(Local v);
 
   /**
    * Sets the type of the local variable
-   * @param v the local variable
-   * @param t the type
+   * 
+   * @param v
+   *          the local variable
+   * @param t
+   *          the type
    */
   public void set(Local v, Type t);
 
   /**
    * Returns an iterable of all typed locals
+   * 
    * @return an iterable of all typed locals
    */
   public Iterable<Local> getAllLocals();
 
   /**
    * Returns true if no locals are typed
+   * 
    * @return true if no locals are typed
    */
   public boolean isEmpty();
 
   /**
-   * Clones all locals and typings from an existing typing.
-   * Removes potentially existing typings
-   * @param tg the typing
+   * Clones all locals and typings from an existing typing. Removes potentially existing typings
+   * 
+   * @param tg
+   *          the typing
    */
   public default void cloneFrom(ITyping tg) {
     clear();

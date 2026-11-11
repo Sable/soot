@@ -1,6 +1,7 @@
 package soot.jimple.internal;
 
 import soot.BooleanType;
+import soot.IntType;
 
 /*-
  * #%L
@@ -51,6 +52,11 @@ public class JLtExpr extends AbstractJimpleIntBinopExpr implements LtExpr {
   @Override
   public void apply(Switch sw) {
     ((ExprSwitch) sw).caseLtExpr(this);
+  }
+
+  @Override
+  public Type getKnownOperandType() {
+    return IntType.v();
   }
 
   @Override
