@@ -99,13 +99,19 @@ public class VirtualCalls {
 
   public SootMethod resolveNonSpecial(RefType t, SootMethodRef callee, boolean appOnly) {
     SootClass cls = t.getSootClass();
-    if (appOnly && cls.isLibraryClass()) {
-      return null;
-    } else if (!cls.isInterface()) {
-      return Scene.v().getOrMakeFastHierarchy().resolveConcreteDispatch(cls, callee);
-    } else {
+    Scene scene = Scene.v();
+    boolean restrictedLibrary = appOnly && cls.isLibraryClass();
+    if (restrictedLibrary && !scene.hasLibraryMethodFilter()) {
       return null;
     }
+    if (cls.isInterface()) {
+      return null;
+    }
+    SootMethod target = scene.getOrMakeFastHierarchy().resolveConcreteDispatch(cls, callee);
+    if (restrictedLibrary && target != null && !scene.isLibraryMethodAnalysisAllowed(target)) {
+      return null;
+    }
+    return target;
   }
 
   public void resolve(Type t, Type declaredType, SootMethodRef callee, SootMethod container,

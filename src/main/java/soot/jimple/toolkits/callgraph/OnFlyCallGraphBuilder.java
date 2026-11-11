@@ -333,7 +333,7 @@ public class OnFlyCallGraphBuilder {
         continue;
       }
       SootMethod m = momc.method();
-      if (appOnly && !m.getDeclaringClass().isApplicationClass()) {
+      if (appOnly && !m.getDeclaringClass().isApplicationClass() && !Scene.v().isLibraryMethodAnalysisAllowed(m)) {
         continue;
       }
       if (analyzedMethods.add(m)) {

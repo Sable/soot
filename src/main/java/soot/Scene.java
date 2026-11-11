@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -89,6 +90,51 @@ import soot.util.StringNumberer;
  */
 public class Scene {
   private static final Logger logger = LoggerFactory.getLogger(Scene.class);
+
+  private Predicate<SootMethod> libraryMethodFilter;
+
+  /**
+   * Sets an optional filter selecting library methods that may be processed despite an {@code apponly} call graph
+   * restriction. Selected methods retain their library ownership. When {@code apponly} is disabled, the existing call
+   * graph behavior is unchanged and this filter does not restrict library methods.
+   *
+   * This selection adds exceptions to call graph restrictions; it does not change entry point selection or restrict
+   * method bodies used by SPARK pointer constraints, pre-jimplification, evaluation, or other analyses. A selected
+   * method must still become reachable and have an analyzable implementation for its body to be processed.
+   *
+   * Each call replaces the previously configured filter. Combine multiple selections with
+   * {@link Predicate#or(Predicate)} before setting the filter.
+   *
+   * For example, after loading the model methods into the current Scene, configure SPARK before starting analysis:
+   * <pre>{@code
+   * Set<SootMethod> models = Set.copyOf(modelMethods);
+   * Options.v().setPhaseOption("cg.spark", "enabled:true");
+   * Options.v().setPhaseOption("cg.spark", "apponly:true");
+   * Scene.v().setLibraryMethodFilter(models::contains);
+   * }</pre>
+   *
+   * Configure the filter before analysis and keep its decisions stable throughout that analysis. Changing it does not
+   * rebuild existing graphs or constraints. Passing {@code null} removes the additional library permissions and restores the
+   * existing call graph restrictions for subsequent analysis.
+   * A new Scene created by {@link G#reset()} has no filter.
+   */
+  public void setLibraryMethodFilter(Predicate<SootMethod> filter) {
+    libraryMethodFilter = filter;
+  }
+
+  /** Returns whether an explicit library method filter is configured. */
+  public boolean hasLibraryMethodFilter() {
+    return libraryMethodFilter != null;
+  }
+
+  /**
+   * Returns whether this library method is explicitly selected as an exception to an {@code apponly} restriction.
+   * Returns false for application and phantom classes, or when no filter is configured. This is an additional library
+   * permission, rather than the complete analysis decision; callers retain their existing rules for other methods.
+   */
+  public boolean isLibraryMethodAnalysisAllowed(SootMethod method) {
+    return libraryMethodFilter != null && method.getDeclaringClass().isLibraryClass() && libraryMethodFilter.test(method);
+  }
 
   private static final int defaultSdkVersion = 27;
   private static final Pattern arrayPattern = Pattern.compile("([^\\[\\]]*)(.*)");
