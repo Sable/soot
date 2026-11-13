@@ -45,7 +45,7 @@ public final class SmallNumberedMap<K extends Numberable, V> implements INumbere
   }
 
   @Override
-  public boolean put(K key, V value) {
+  public synchronized boolean put(K key, V value) {
     int pos = findPosition(key);
     if (array[pos] == key) {
       if (values[pos] == value) {
@@ -65,12 +65,12 @@ public final class SmallNumberedMap<K extends Numberable, V> implements INumbere
   }
 
   @Override
-  public V get(K key) {
+  public synchronized V get(K key) {
     return values[findPosition(key)];
   }
 
   @Override
-  public void remove(K key) {
+  public synchronized void remove(K key) {
     int pos = findPosition(key);
     if (array[pos] == key) {
       array[pos] = null;
